@@ -160,8 +160,8 @@ Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh 
 | **Node 11** | Dòng 48–53    | Thêm lỗi `failed.push(...)`, `continue` (quay lại đỉnh vòng lặp Node 7) | Process (Xử lý rẽ nhánh) |
 | **Node 12** | Dòng 56–58    | Khởi tạo `jobTitle`, lấy `jobID`, kiểm tra `if (jobID)` | Decision (Điểm quyết định 7) |
 | **Node 13** | Dòng 59–64    | Khối `try-catch` truy vấn công việc `jobRepo.getById(jobID)` lấy `jobTitle` | Process (Xử lý) |
-| **Node 14** | Dòng 67–85    | Thay thế `replacePlaceholders`, dựng `htmlContent`, gọi `mailSvc.sendEmail(...)`, kiểm tra `if (sent)` | Decision (Điểm quyết định 8) |
-| **Node 15** | Dòng 87–88    | Tăng biến đếm gửi thành công: `totalSent++` | Process (Xử lý) |
+| **Node 14** | Dòng 67–87    | Thay thế `replacePlaceholders`, dựng `htmlContent`, gọi `mailSvc.sendEmail(...)`, kiểm tra `if (sent)` | Decision (Điểm quyết định 8) |
+| **Node 15** | Dòng 88       | Tăng biến đếm gửi thành công: `totalSent++` | Process (Xử lý) |
 | **Node 16** | Dòng 89–94    | Thêm lỗi gửi mail thất bại: `failed.push(...)` | Process (Xử lý) |
 | **Node 17** | Dòng 96–103   | Bắt ngoại lệ khối ngoài: `catch (error) { failed.push(...) }` | Exception Handler (Xử lý ngoại lệ) |
 | **Node 18** | Dòng 107–112  | Hết vòng lặp `for`: tạo kết quả và trả về `return { success: true, ... }` | Exit (Thoát bình thường) |

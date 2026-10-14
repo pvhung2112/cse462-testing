@@ -189,8 +189,8 @@ def add_blocks_table(doc):
         ("Node 11", "Dòng 48–53", "failed.push('Ứng viên không có email.'), continue (về Node 7)", "Process"),
         ("Node 12", "Dòng 56–58", "Lấy jobID, kiểm tra if (jobID)", "Decision (Quyết định 7)"),
         ("Node 13", "Dòng 59–64", "Khối try-catch lấy thông tin jobRepo.getById(jobID)", "Process"),
-        ("Node 14", "Dòng 67–85", "replacePlaceholders, dựng html, gọi mailSvc.sendEmail, if (sent)", "Decision (Quyết định 8)"),
-        ("Node 15", "Dòng 87–88", "Tăng biến đếm: totalSent++", "Process"),
+        ("Node 14", "Dòng 67–87", "replacePlaceholders, dựng html, gọi mailSvc.sendEmail, if (sent)", "Decision (Quyết định 8)"),
+        ("Node 15", "Dòng 88", "Tăng biến đếm: totalSent++", "Process"),
         ("Node 16", "Dòng 89–94", "failed.push('Lỗi gửi email từ dịch vụ mail.')", "Process"),
         ("Node 17", "Dòng 96–103", "catch (error) { failed.push(...) } bắt ngoại lệ runtime", "Exception Handler"),
         ("Node 18", "Dòng 107–112", "return { success: true, message, totalSent, failed }", "Exit (Thoát bình thường)")
