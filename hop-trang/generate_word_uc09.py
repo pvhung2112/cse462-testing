@@ -176,7 +176,8 @@ def add_blocks_table(doc):
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
 
     blocks = [
-        ("Node 1", "Dòng 8–9", "Tiếp nhận input, kiểm tra if (!input.candidateIds || length === 0)", "Decision (Quyết định 1)"),
+        ("Start", "Dòng 8", "Bắt đầu hàm execute(input)", "Điểm vào (Entry Point)"),
+        ("Node 1", "Dòng 9", "Kiểm tra if (!input.candidateIds || length === 0)", "Decision (Quyết định 1)"),
         ("Node 2", "Dòng 10", "throw new Error('Danh sách ứng viên không được để trống.')", "Exit (Ngoại lệ 1)"),
         ("Node 3", "Dòng 13", "Kiểm tra tiêu đề email if (!input.title?.trim())", "Decision (Quyết định 2)"),
         ("Node 4", "Dòng 14", "throw new Error('Tiêu đề email không được để trống.')", "Exit (Ngoại lệ 2)"),

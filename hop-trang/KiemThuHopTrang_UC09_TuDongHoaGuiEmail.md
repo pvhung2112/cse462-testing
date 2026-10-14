@@ -147,11 +147,12 @@ Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh 
 
 | Khối (Node) | Dòng mã nguồn | Nội dung thực thi chi tiết | Loại đỉnh (Node Type) |
 | :---------: | :------------ | :------------------------- | :-------------------- |
-| **Node 1**  | Dòng 8–9      | Tiếp nhận `input`, kiểm tra `if (!input.candidateIds \|\| input.candidateIds.length === 0)` | Decision (Điểm quyết định 1) |
+| **Start**   | Dòng 8        | Bắt đầu hàm `execute(input)` | Điểm vào (Entry Point) |
+| **Node 1**  | Dòng 9        | Kiểm tra `if (!input.candidateIds \|\| input.candidateIds.length === 0)` | Decision (Điểm quyết định 1) |
 | **Node 2**  | Dòng 10       | `throw new Error('Danh sách ứng viên không được để trống.')` | Exit (Ngoại lệ 1) |
-| **Node 3**  | Dòng 13       | Kiểm tra tiêu đề `if (!input.title?.trim())` | Decision (Điểm quyết định 2) |
+| **Node 3**  | Dòng 13       | Kiểm tra tiêu đề email `if (!input.title?.trim())` | Decision (Điểm quyết định 2) |
 | **Node 4**  | Dòng 14       | `throw new Error('Tiêu đề email không được để trống.')` | Exit (Ngoại lệ 2) |
-| **Node 5**  | Dòng 17       | Kiểm tra nội dung `if (!input.content?.trim())` | Decision (Điểm quyết định 3) |
+| **Node 5**  | Dòng 17       | Kiểm tra nội dung email `if (!input.content?.trim())` | Decision (Điểm quyết định 3) |
 | **Node 6**  | Dòng 18       | `throw new Error('Nội dung email không được để trống.')` | Exit (Ngoại lệ 3) |
 | **Node 7**  | Dòng 21–33    | Khởi tạo `failed = []`, `totalSent = 0`, lấy `candidates`, kiểm tra vòng lặp `for (i < candidates.length)` | Decision / Loop Header (Điểm quyết định 4) |
 | **Node 8**  | Dòng 34–38    | Lấy `candidate`, `candidateId`, bắt đầu `try`, kiểm tra `if (!candidate)` | Decision (Điểm quyết định 5) |
