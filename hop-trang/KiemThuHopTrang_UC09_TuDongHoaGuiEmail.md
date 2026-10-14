@@ -137,13 +137,13 @@ Dưới đây là mã nguồn chuẩn hóa của lớp `SendBulkEmailUseCase` đ
 114:}
 ```
 
-*(Ghi chú: Dòng 1–6 là khai báo cấu trúc Class và Constructor Dependency Injection, không chứa luồng điều khiển nghiệp vụ. Đồ thị CFG được xây dựng cho phương thức `execute` từ dòng 8).*
+*(Ghi chú: Dòng 1–6 là khai báo Class và Constructor Dependency Injection, không chứa luồng điều khiển nghiệp vụ. Đồ thị CFG được xây dựng cho phương thức `execute` từ dòng 8).*
 
 ---
 
 ## 2. BẢNG PHÂN CHIA KHỐI LỆNH CƠ BẢN (BASIC BLOCKS)
 
-Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh thực thi tuần tự, có duy nhất 1 điểm vào và 1 điểm ra), phương thức `execute` được phân tách thành 20 khối lệnh (Nodes) rành mạch:
+Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh thực thi tuần tự, có duy nhất 1 điểm vào và 1 điểm ra), phương thức `execute` được phân tách thành 21 khối lệnh chi tiết và tách bạch tuyệt đối các nhánh ngoại lệ:
 
 | Khối (Node) | Dòng mã nguồn | Nội dung thực thi chi tiết | Loại đỉnh (Node Type) |
 | :---------: | :------------ | :------------------------- | :-------------------- |
@@ -161,12 +161,13 @@ Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh 
 | **Node 11** | Dòng 46–47    | Lấy `personal = candidate.getPersonal()`, kiểm tra `if (!personal?.email)` | Decision (Điểm quyết định 6) |
 | **Node 12** | Dòng 48–53    | Thân if: `failed.push(...)`, `continue` (quay lại đỉnh vòng lặp Node 8) | Process (Xử lý rẽ nhánh) |
 | **Node 13** | Dòng 56–58    | Khởi tạo `jobTitle`, lấy `jobID`, kiểm tra `if (jobID)` | Decision (Điểm quyết định 7) |
-| **Node 14** | Dòng 59–64    | Thân if: khối `try-catch` truy vấn công việc `jobRepo.getById(jobID)` lấy `jobTitle` | Process (Xử lý truy vấn) |
+| **Node 14a**| Dòng 59–61    | Khối `try`: truy vấn công việc `jobRepo.getById(jobID)` và gán `jobTitle` | Process (Xử lý truy vấn thành công) |
+| **Node 14b**| Dòng 62–64    | Khối `catch`: bắt lỗi truy vấn Job, ghi log cảnh báo `console.warn(...)` | Exception Handler (Xử lý lỗi truy vấn Job) |
 | **Node 15** | Dòng 67–85    | Thay thế placeholder, dựng `htmlContent`, gọi `sent = await mailSvc.sendEmail(...)` | Process (Xử lý gửi mail) |
 | **Node 16** | Dòng 87       | Kiểm tra kết quả gửi thư: `if (sent)` | Decision (Điểm quyết định 8) |
 | **Node 17** | Dòng 88       | Thân True của if 8: tăng biến đếm `totalSent++` | Process (Xử lý thành công) |
 | **Node 18** | Dòng 89–94    | Thân False (else) của if 8: `failed.push('Lỗi gửi email từ dịch vụ mail.')` | Process (Xử lý thất bại) |
-| **Node 19** | Dòng 96–103   | Khối bắt ngoại lệ ngoài: `catch (error) { failed.push(...) }` | Exception Handler (Xử lý ngoại lệ) |
+| **Node 19** | Dòng 96–103   | Khối bắt ngoại lệ ngoài: `catch (error) { failed.push(...) }` | Exception Handler (Xử lý ngoại lệ runtime) |
 | **Node 20** | Dòng 107–112  | Hết vòng lặp `for`: tạo kết quả và trả về `return { success: true, ... }` | Exit (Thoát bình thường) |
 
 ---
@@ -175,7 +176,7 @@ Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh 
 
 ### 3.1. Đồ thị dòng điều khiển ứng với độ đo C1 và C2 (Statement & Decision Coverage)
 
-Đồ thị dưới đây mô tả chuẩn 20 khối lệnh cơ bản và phản ánh chính xác các điểm rẽ nhánh nhị phân Đúng (True) / Sai (False):
+Đồ thị dưới đây mô tả chính xác luồng điều khiển bao gồm cả nhánh rẽ ngoại lệ của khối `try-catch` khi truy vấn công việc (Node 14a & 14b):
 
 ```mermaid
 flowchart TD
@@ -203,9 +204,12 @@ flowchart TD
     N12 --> N8
     
     N11 -- "False" --> N13{"Node 13: if (jobID)?"}
-    N13 -- "True" --> N14["Node 14: Fetch jobRepo.getById()"]
-    N13 -- "False" --> N15["Node 15: replacePlaceholders & mailSvc.sendEmail"]
-    N14 --> N15
+    N13 -- "True" --> N14a["Node 14a (Try): Fetch jobRepo.getById()"]
+    N13 -- "False" --> N15["Node 15: replacePlaceholders & sendEmail"]
+    
+    N14a -- "Thành công" --> N15
+    N14a -. "Lỗi DB" .-> N14b["Node 14b (Catch): console.warn(Lỗi Job)"]
+    N14b --> N15
     
     N15 --> N16{"Node 16: if (sent)?"}
     
@@ -221,12 +225,6 @@ flowchart TD
     N19 --> N8
 ```
 
-### 3.2. Đồ thị dòng điều khiển ứng với độ đo C3 (Condition Coverage)
-
-Tại điểm quyết định có biểu thức điều kiện phức:
-- **Node 1:** Biểu thức logic `A || B` trong đó $A$ là `!input.candidateIds` và $B$ là `input.candidateIds.length === 0`.
-  - Để đạt độ đo C3, mỗi điều kiện thành phần $A$ và $B$ đều phải nhận độc lập hai giá trị chân lý: **Đúng (True)** và **Sai (False)**.
-
 ---
 
 ## 4. TÍNH ĐỘ PHỨC TẠP CYCLOMATIC (MCCABE)
@@ -236,15 +234,15 @@ Tại điểm quyết định có biểu thức điều kiện phức:
 ### 1. Phương pháp 1: Dựa trên số cung ($E$) và số đỉnh ($N$)
 $$V(G) = E - N + 2P$$
 Trong đó:
-- Số đỉnh (Nodes) $N = 20$ (từ Node 1 đến Node 20).
-- Số cung (Edges) $E = 27$ (gồm các nhánh rẽ True/False, cung tuần tự và cung quay lui vòng lặp).
+- Số đỉnh (Nodes) $N = 21$ (gồm Node 1 đến Node 20, trong đó Node 14 được phân rã thành Node 14a và Node 14b).
+- Số cung (Edges) $E = 29$ (gồm các nhánh rẽ True/False, cung tuần tự và các nhánh ngoại lệ Exception).
 - Số thành phần liên thông $P = 1$.
 
-$$\Rightarrow V(G) = 27 - 20 + 2(1) = 9$$
+$$\Rightarrow V(G) = 29 - 21 + 2(1) = 10$$
 
 ### 2. Phương pháp 2: Dựa trên số điểm quyết định vị từ ($P_n$)
 $$V(G) = P_n + 1$$
-Trong đó $P_n$ là 8 điểm rẽ nhánh nhị phân vị từ (Predicate Nodes) trong đồ thị dòng điều khiển:
+Trong đó $P_n$ là 9 điểm rẽ nhánh nhị phân (gồm 8 câu lệnh điều kiện `if/for` + 1 điểm rẽ ngoại lệ tại khối `try-catch` truy vấn Job):
 1. **Node 1:** `!input.candidateIds || length === 0`
 2. **Node 3:** `!input.title?.trim()`
 3. **Node 5:** `!input.content?.trim()`
@@ -252,16 +250,17 @@ Trong đó $P_n$ là 8 điểm rẽ nhánh nhị phân vị từ (Predicate Node
 5. **Node 9:** `!candidate`
 6. **Node 11:** `!personal?.email`
 7. **Node 13:** `jobID != null`
-8. **Node 16:** `sent == true`
+8. **Khối Job Try-Catch (Node 14a/14b):** Rẽ nhánh khi truy vấn Job thành công hoặc ném Exception
+9. **Node 16:** `sent == true`
 
-$$\Rightarrow P_n = 8 \implies V(G) = 8 + 1 = 9$$
+$$\Rightarrow P_n = 9 \implies V(G) = 9 + 1 = 10$$
 
 ### 3. Phương pháp 3: Dựa trên số miền mặt phẳng khép kín ($R$)
 $$V(G) = R$$
-Đồ thị phẳng có 8 miền kín bao bọc bởi các chu trình rẽ nhánh và vòng lặp ($R_1 \dots R_8$) cộng thêm 1 miền vô hạn bao quanh bên ngoài ($R_9$):
-$$\Rightarrow V(G) = R = 9$$
+Đồ thị phẳng có 9 miền kín bao bọc bởi các chu trình rẽ nhánh và vòng lặp ($R_1 \dots R_9$) cộng thêm 1 miền vô hạn bao quanh bên ngoài ($R_{10}$):
+$$\Rightarrow V(G) = R = 10$$
 
-> **Kết luận:** Độ phức tạp Cyclomatic của phương thức `execute` là **$V(G) = 9$**. Cần tối thiểu **9 đường dẫn cơ sở (Basis Paths)** độc lập tuyến tính để bao phủ toàn bộ đồ thị dòng điều khiển.
+> **Kết luận:** Độ phức tạp Cyclomatic của phương thức `execute` là **$V(G) = 10$**. Cần tối thiểu **10 đường dẫn cơ sở (Basis Paths)** độc lập tuyến tính để bao phủ toàn bộ đồ thị dòng điều khiển.
 
 ---
 
@@ -276,8 +275,9 @@ $$\Rightarrow V(G) = R = 9$$
 | **Path 5** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 10 \rightarrow 8 \rightarrow 20$ | Nhánh không tìm thấy ứng viên trong database (`candidate === null`) |
 | **Path 6** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 12 \rightarrow 8 \rightarrow 20$ | Nhánh ứng viên không có địa chỉ email |
 | **Path 7** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 13 \rightarrow 15 \rightarrow 16 \rightarrow 18 \rightarrow 8 \rightarrow 20$ | Nhánh không có `jobID`, gửi email qua SMTP thất bại (`sent === false`) |
-| **Path 8** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 13 \rightarrow 14 \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | Nhánh Happy Path: có `jobID`, truy vấn Job, gửi email thành công |
-| **Path 9** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 19 \rightarrow 8 \rightarrow 20$ | Nhánh phát sinh ngoại lệ đột ngột trong khối `try` (Runtime Exception) |
+| **Path 8** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 13 \rightarrow 14a \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | Nhánh Happy Path: có `jobID`, truy vấn Job thành công (qua 14a), gửi email thành công |
+| **Path 9** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 13 \rightarrow 14a \rightarrow 14b \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | Nhánh có `jobID` nhưng truy vấn Job lỗi (qua 14b), bắt log cảnh báo và vẫn gửi email |
+| **Path 10**| $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 19 \rightarrow 8 \rightarrow 20$ | Nhánh phát sinh ngoại lệ đột ngột trong khối `try` ngoài (Runtime Exception) |
 
 ---
 
@@ -293,8 +293,9 @@ $$\Rightarrow V(G) = R = 9$$
 | **TC_WB_04** | Path 5: $Start \dots \rightarrow 8 \rightarrow 9 \rightarrow 10 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['CAN_UNKNOWN']`, `title: "Hẹn PV"`, `content: "Chào bạn"` | `candidateRepo.getById('CAN_UNKNOWN')` trả về `null` | Trả về `totalSent: 0`, `failed` chứa `error: 'Không tìm thấy ứng viên.'` | Đạt |
 | **TC_WB_05** | Path 6: $Start \dots \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 12 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C02']`, `title: "Hẹn PV"`, `content: "Chào bạn"` | Candidate tìm thấy nhưng `personal.email = undefined` | Trả về `totalSent: 0`, `failed` chứa `error: 'Ứng viên không có email.'` | Đạt |
 | **TC_WB_06** | Path 7: $Start \dots \rightarrow 13 \rightarrow 15 \rightarrow 16 \rightarrow 18 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C03']`, `title: "Hẹn PV"`, `content: "Chào [Tên Ứng Viên]"` | Candidate hợp lệ, `jobID = null`, `mailSvc.sendEmail` trả về `false` | Trả về `totalSent: 0`, `failed` chứa `error: 'Lỗi gửi email từ dịch vụ mail.'` | Đạt |
-| **TC_WB_07** | Path 8: $Start \dots \rightarrow 13 \rightarrow 14 \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C04']`, `title: "Tuyển dụng [Vị Trí]"`, `content: "Chào [Tên Ứng Viên]"` | Candidate hợp lệ, `jobID = 'JOB_01'`, `jobRepo.getById` trả về Job, `mailSvc.sendEmail` trả về `true` | Trả về `totalSent: 1`, `failed: []`, `message: 'Gửi email thành công tới 1/1 ứng viên.'` (Happy Path) | Đạt |
-| **TC_WB_08** | Path 9: $Start \dots \rightarrow 11 \rightarrow 19 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C05']`, `title: "Hẹn PV"`, `content: "Chào bạn"` | `candidate.getPersonal()` ném ngoại lệ đột ngột: `Error('Crash')` | Khối `catch` bắt lỗi, thêm vào mảng `failed` với thông điệp: `'Crash'` | Đạt |
+| **TC_WB_07** | Path 8: $Start \dots \rightarrow 13 \rightarrow 14a \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C04']`, `title: "Tuyển dụng [Vị Trí]"`, `content: "Chào [Tên Ứng Viên]"` | Candidate hợp lệ, `jobID = 'JOB_01'`, `jobRepo.getById` trả về Job, `mailSvc.sendEmail` trả về `true` | Trả về `totalSent: 1`, `failed: []`, `message: 'Gửi email thành công tới 1/1 ứng viên.'` (Happy Path) | Đạt |
+| **TC_WB_08** | Path 9: $Start \dots \rightarrow 13 \rightarrow 14a \rightarrow 14b \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C05']`, `title: "Tuyển dụng [Vị Trí]"`, `content: "Chào bạn"` | Candidate hợp lệ, `jobID = 'JOB_ERR'`, `jobRepo.getById` ném Exception mạng $\rightarrow$ bắt tại Node 14b | In `console.warn`, email vẫn gửi thành công không có tên job, `totalSent: 1` | Đạt |
+| **TC_WB_09** | Path 10: $Start \dots \rightarrow 11 \rightarrow 19 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C06']`, `title: "Hẹn PV"`, `content: "Chào bạn"` | `candidate.getPersonal()` ném ngoại lệ đột ngột: `Error('Crash')` | Khối `catch` (Node 19) bắt lỗi, thêm vào mảng `failed` với thông điệp: `'Crash'` | Đạt |
 
 ---
 
@@ -315,13 +316,13 @@ $\Rightarrow$ **Kết luận C3:** 3 ca kiểm thử trên đảm bảo mỗi đ
 ## 7. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN
 
 1. **Độ bao phủ câu lệnh ($C_1$ - Statement Coverage):**
-   - Tổng số khối lệnh (Basic Blocks): $20/20$ khối.
-   - Số khối được thực thi qua tập Test Cases: $20/20$ khối.
+   - Tổng số khối lệnh (Basic Blocks): $21/21$ khối.
+   - Số khối được thực thi qua tập Test Cases: $21/21$ khối (bao gồm cả khối Try 14a và khối Catch 14b).
    - **Tỷ lệ bao phủ $C_1$:** $\mathbf{100\%}$.
 
 2. **Độ bao phủ nhánh quyết định ($C_2$ - Branch Coverage):**
-   - Tất cả 8 điểm quyết định (Node 1, 3, 5, 8, 9, 11, 13, 16) đều được kích hoạt đầy đủ 2 nhánh **Đúng (True)** và **Sai (False)**.
+   - Tất cả 9 điểm quyết định và rẽ nhánh ngoại lệ đều được kích hoạt đầy đủ 2 nhánh **Đúng (True)** và **Sai (False)**.
    - **Tỷ lệ bao phủ $C_2$:** $\mathbf{100\%}$.
 
 3. **Tính độc lập và khả năng bảo trì:**
-   - Bộ Test Case bao phủ toàn diện cả các trường hợp biên dữ liệu rỗng (Boundary Values), các nhánh lỗi logic ứng viên không tồn tại, lỗi thiếu email, lỗi dịch vụ gửi thư SMTP bên ngoài và ngoại lệ thời gian chạy (Runtime Exception).
+   - Bộ Test Case bao phủ toàn diện cả các trường hợp biên dữ liệu rỗng (Boundary Values), các nhánh lỗi logic ứng viên không tồn tại, lỗi thiếu email, lỗi dịch vụ gửi thư SMTP bên ngoài, lỗi kết nối cơ sở dữ liệu khi truy vấn công việc và ngoại lệ thời gian chạy (Runtime Exception).
