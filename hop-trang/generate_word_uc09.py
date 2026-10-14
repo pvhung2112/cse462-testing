@@ -300,121 +300,42 @@ def add_mccabe_section(doc):
     r.font.size = Pt(10)
     doc.add_paragraph()
 
-def add_paths_table(doc):
-    h = doc.add_heading("5. THIẾT KẾ CÁC ĐƯỜNG DẪN CƠ SỞ (BASIS PATHS)", level=1)
+def add_section_5(doc):
+    h = doc.add_heading("5. SINH CÁC ĐƯỜNG ĐI VÀ CA KIỂM THỬ THEO C1, C2, C3", level=1)
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
 
-    paths = [
-        ("Path 1", "Start -> 1 -> 2", "Nhánh lỗi danh sách ứng viên rỗng / undefined"),
-        ("Path 2", "Start -> 1 -> 3 -> 4", "Nhánh lỗi tiêu đề email bị để trống"),
-        ("Path 3", "Start -> 1 -> 3 -> 5 -> 6", "Nhánh lỗi nội dung email bị để trống"),
-        ("Path 4", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 20", "Nhánh danh sách ứng viên hợp lệ nhưng vòng lặp 0 lần"),
-        ("Path 5", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 10 -> 8 -> 20", "Nhánh không tìm thấy ứng viên trong database"),
-        ("Path 6", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 11 -> 12 -> 8 -> 20", "Nhánh ứng viên không có địa chỉ email"),
-        ("Path 7", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 11 -> 13 -> 15 -> 16 -> 18 -> 8 -> 20", "Nhánh không có jobID, gửi email qua SMTP thất bại"),
-        ("Path 8", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 11 -> 13 -> 14a -> 15 -> 16 -> 17 -> 8 -> 20", "Happy Path: có jobID, query Job OK, gửi mail thành công"),
-        ("Path 9", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 11 -> 13 -> 14a -> 14b -> 15 -> 16 -> 17 -> 8 -> 20", "Nhánh có jobID nhưng query Job lỗi, bắt log và vẫn gửi mail"),
-        ("Path 10", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 11 -> 19 -> 8 -> 20", "Nhánh phát sinh ngoại lệ đột ngột trong khối try ngoài")
+    # 5.1 C1 Table
+    h_c1 = doc.add_heading("5.1. Sinh đường đi và ca kiểm thử ứng với độ đo C1", level=2)
+    h_c1.style.font.color.rgb = RGBColor(0x2E, 0x75, 0xB6)
+
+    p_c1 = doc.add_paragraph()
+    r_c1 = p_c1.add_run("Mục tiêu độ đo C1 (Statement Coverage): Đảm bảo tất cả các khối lệnh (Node) trong đồ thị dòng điều khiển (từ Start, Node 1 đến Node 20, bao gồm cả Node 14a, 14b, 19) đều được thực thi ít nhất một lần qua tập các ca kiểm thử.")
+    r_c1.font.size = Pt(9.5)
+    r_c1.font.italic = True
+
+    c1_data = [
+        ("C1_01", "Start -> 1 -> 2", "candidateIds: [], title: 'Thư mời', content: 'Nội dung'", "Ném lỗi: 'Danh sách ứng viên không được để trống.'", "Đạt", "Phủ Node 1, 2"),
+        ("C1_02", "Start -> 1 -> 3 -> 4", "candidateIds: ['CAN_01'], title: '   ', content: 'Nội dung'", "Ném lỗi: 'Tiêu đề email không được để trống.'", "Đạt", "Phủ Node 3, 4"),
+        ("C1_03", "Start -> 1 -> 3 -> 5 -> 6", "candidateIds: ['CAN_01'], title: 'Thư mời', content: ''", "Ném lỗi: 'Nội dung email không được để trống.'", "Đạt", "Phủ Node 5, 6"),
+        ("C1_04", "Start..->8->9->10->8->20", "candidateIds: ['CAN_UNKNOWN'], DB không có ứng viên", "totalSent: 0, failed chứa 'Không tìm thấy ứng viên.'", "Đạt", "Phủ Node 7, 8, 9, 10, 20"),
+        ("C1_05", "Start..->8->9->11->12->8->20", "candidateIds: ['CAN_02'], personal.email = undefined", "totalSent: 0, failed chứa 'Ứng viên không có email.'", "Đạt", "Phủ Node 11, 12"),
+        ("C1_06", "Start..->13->15->16->18->8->20", "candidateIds: ['CAN_03'], jobID: null, mailSvc trả về false", "totalSent: 0, failed chứa 'Lỗi gửi email từ dịch vụ mail.'", "Đạt", "Phủ Node 13, 15, 16, 18"),
+        ("C1_07", "Start..->13->14a->15->16->17->8->20", "candidateIds: ['CAN_04'], jobID: 'JOB_01', mailSvc trả về true", "totalSent: 1, failed: [], gửi thành công 1/1", "Đạt", "Phủ Node 14a, 17 (Happy Path)"),
+        ("C1_08", "Start..->13->14a->14b->15->16->17->8->20", "candidateIds: ['CAN_05'], jobID: 'JOB_ERR', jobRepo ném lỗi", "Bắt tại 14b, log cảnh báo, gửi mail tiếp tục thành công", "Đạt", "Phủ Node 14b"),
+        ("C1_09", "Start..->11->19->8->20", "candidateIds: ['CAN_06'], getPersonal() ném ngoại lệ", "Bắt tại catch ngoài (Node 19), failed ghi 'DB Crash'", "Đạt", "Phủ Node 19")
     ]
 
-    table = doc.add_table(rows=len(paths) + 1, cols=3)
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    set_table_borders(table)
+    table_c1 = doc.add_table(rows=len(c1_data) + 1, cols=6)
+    table_c1.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(table_c1)
 
-    headers = ["Mã đường dẫn", "Chuỗi các khối lệnh (Nodes Sequence)", "Mục tiêu bao phủ"]
-    for j, h_text in enumerate(headers):
-        cell = table.rows[0].cells[j]
-        set_cell_background(cell, "1F4E79")
-        set_cell_margins(cell)
-        p = cell.paragraphs[0]
-        r = p.add_run(h_text)
-        r.bold = True
-        r.font.size = Pt(9.5)
-        r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+    c1_headers = ["TT", "Đường đi theo Node", "Dữ liệu đầu vào (Input)", "Đầu ra mong đợi", "Đầu ra thực tế", "Ghi chú"]
+    c1_widths = [Inches(0.6), Inches(1.8), Inches(1.6), Inches(1.5), Inches(0.6), Inches(0.8)]
 
-    for i, row_data in enumerate(paths):
-        row = table.rows[i + 1]
-        for j, val in enumerate(row_data):
-            cell = row.cells[j]
-            if i % 2 == 1:
-                set_cell_background(cell, "F9FAFB")
-            set_cell_margins(cell)
-            p = cell.paragraphs[0]
-            r = p.add_run(val)
-            r.font.size = Pt(8.5)
-            if j == 0:
-                r.bold = True
-
-    doc.add_paragraph()
-
-def add_testcases_table(doc):
-    h = doc.add_heading("6. BẢNG THIẾT KẾ CA KIỂM THỬ HỘP TRẮNG (C1, C2, C3)", level=1)
-    h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
-
-    h_sub = doc.add_heading("6.1. Bảng ca kiểm thử đáp ứng độ đo C1 (Statement) & C2 (Branch Coverage)", level=2)
-    h_sub.style.font.color.rgb = RGBColor(0x2E, 0x75, 0xB6)
-
-    tcs = [
-        ("TC_WB_01", "Path 1: Start -> 1 -> 2", "candidateIds: []", "Ném ngoại lệ: 'Danh sách ứng viên không được để trống.'", "Đạt"),
-        ("TC_WB_02", "Path 2: Start -> 1 -> 3 -> 4", "title: '   '", "Ném ngoại lệ: 'Tiêu đề email không được để trống.'", "Đạt"),
-        ("TC_WB_03", "Path 3: Start -> 1 -> 3 -> 5 -> 6", "content: ''", "Ném ngoại lệ: 'Nội dung email không được để trống.'", "Đạt"),
-        ("TC_WB_04", "Path 5: Start..->8->9->10->8->20", "candidateIds: ['CAN_UNKNOWN'] (DB trả null)", "totalSent: 0, failed chứa 'Không tìm thấy ứng viên.'", "Đạt"),
-        ("TC_WB_05", "Path 6: Start..->8->9->11->12->8->20", "personal.email = undefined", "totalSent: 0, failed chứa 'Ứng viên không có email.'", "Đạt"),
-        ("TC_WB_06", "Path 7: Start..->13->15->16->18->8->20", "mailSvc.sendEmail trả về false", "totalSent: 0, failed chứa 'Lỗi gửi email từ dịch vụ mail.'", "Đạt"),
-        ("TC_WB_07", "Path 8: Start..->13->14a->15->16->17->8->20", "Happy Path đầy đủ (jobID hợp lệ, gửi mail OK)", "totalSent: 1, failed: [], message: Gửi thành công 1/1", "Đạt"),
-        ("TC_WB_08", "Path 9: Start..->13->14a->14b->15->16->17->8->20", "jobRepo.getById ném Exception mạng", "Bắt tại 14b, ghi log warn, gửi mail tiếp tục thành công", "Đạt"),
-        ("TC_WB_09", "Path 10: Start..->11->19->8->20", "candidate.getPersonal() ném ngoại lệ", "Bắt tại khối catch ngoài (Node 19), ghi nhận lỗi 'Crash'", "Đạt"),
-        ("TC_WB_10", "Path 4: Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 20", "Danh sách ứng viên rỗng đã qua validate (vòng for 0 lần)", "totalSent: 0, failed: [], trả về đối tượng kết quả rỗng", "Đạt")
-    ]
-
-    table = doc.add_table(rows=len(tcs) + 1, cols=5)
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    set_table_borders(table)
-
-    headers = ["Mã TC", "Đường đi (Basis Path)", "Dữ liệu đầu vào (Input)", "Kết quả mong đợi (Expected)", "Đánh giá"]
-    for j, h_text in enumerate(headers):
-        cell = table.rows[0].cells[j]
+    for j, h_text in enumerate(c1_headers):
+        cell = table_c1.rows[0].cells[j]
+        cell.width = c1_widths[j]
         set_cell_background(cell, "2E75B6")
-        set_cell_margins(cell)
-        p = cell.paragraphs[0]
-        r = p.add_run(h_text)
-        r.bold = True
-        r.font.size = Pt(9.5)
-        r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
-
-    for i, row_data in enumerate(tcs):
-        row = table.rows[i + 1]
-        for j, val in enumerate(row_data):
-            cell = row.cells[j]
-            if i % 2 == 1:
-                set_cell_background(cell, "F2F4F7")
-            set_cell_margins(cell)
-            p = cell.paragraphs[0]
-            r = p.add_run(val)
-            r.font.size = Pt(8.5)
-            if j == 0 or j == 4:
-                r.bold = True
-
-    doc.add_paragraph()
-
-    # 6.2 C3 Coverage table
-    h_c3 = doc.add_heading("6.2. Kiểm tra độ đo bao phủ điều kiện C3 (Condition Coverage cho Node 1)", level=2)
-    h_c3.style.font.color.rgb = RGBColor(0x2E, 0x75, 0xB6)
-
-    c3_data = [
-        ("C3_01", "True", "Không xét (Short-circuit)", "True", "Node 2 (Ném ngoại lệ)", "input.candidateIds = null hoặc undefined"),
-        ("C3_02", "False", "True", "True", "Node 2 (Ném ngoại lệ)", "input.candidateIds = [] (Mảng rỗng)"),
-        ("C3_03", "False", "False", "False", "Node 3 (Đi tiếp)", "input.candidateIds = ['CAN_01']")
-    ]
-
-    table_c3 = doc.add_table(rows=len(c3_data) + 1, cols=6)
-    table_c3.alignment = WD_TABLE_ALIGNMENT.CENTER
-    set_table_borders(table_c3)
-
-    c3_headers = ["Ca kiểm thử C3", "!input.candidateIds (A)", "length === 0 (B)", "Kết quả (A || B)", "Nhánh rẽ", "Dữ liệu minh họa"]
-    for j, h_text in enumerate(c3_headers):
-        cell = table_c3.rows[0].cells[j]
-        set_cell_background(cell, "1F4E79")
         set_cell_margins(cell)
         p = cell.paragraphs[0]
         r = p.add_run(h_text)
@@ -422,29 +343,183 @@ def add_testcases_table(doc):
         r.font.size = Pt(9)
         r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
 
-    for i, row_data in enumerate(c3_data):
-        row = table_c3.rows[i + 1]
+    for i, row_data in enumerate(c1_data):
+        row = table_c1.rows[i + 1]
         for j, val in enumerate(row_data):
             cell = row.cells[j]
+            cell.width = c1_widths[j]
+            if i % 2 == 1:
+                set_cell_background(cell, "F2F4F7")
+            set_cell_margins(cell)
+            p = cell.paragraphs[0]
+            r = p.add_run(val)
+            r.font.size = Pt(8)
+            if j == 0 or j == 4:
+                r.bold = True
+
+    doc.add_paragraph()
+
+    # 5.2 C2 Branch Matrix
+    h_c2 = doc.add_heading("5.2. Sinh đường đi và ca kiểm thử ứng với độ đo C2", level=2)
+    h_c2.style.font.color.rgb = RGBColor(0x2E, 0x75, 0xB6)
+
+    p_c2 = doc.add_paragraph()
+    r_c2 = p_c2.add_run("Mục tiêu độ đo C2 (Branch Coverage): Mỗi điểm quyết định trong đồ thị đều được duyệt qua cả hai nhánh Đúng (True) và Sai (False) ít nhất một lần.\n\nBảng ma trận điều kiện rẽ nhánh C2:")
+    r_c2.font.size = Pt(9.5)
+    r_c2.font.italic = True
+
+    c2_data = [
+        ("Node 1", "!input.candidateIds || candidateIds.length === 0", "Sang Node 2", "Sang Node 3", "C1_01", "C1_02"),
+        ("Node 3", "!input.title || input.title.trim() === ''", "Sang Node 4", "Sang Node 5", "C1_02", "C1_03"),
+        ("Node 5", "!input.content || input.content.trim() === ''", "Sang Node 6", "Sang Node 7", "C1_03", "C1_04"),
+        ("Node 8", "i < candidates.length (Vòng lặp for)", "Sang Node 9", "Sang Node 20", "C1_04 (Lần 1)", "C1_04 (Hết mảng)"),
+        ("Node 9", "!candidate", "Sang Node 10", "Sang Node 11", "C1_04", "C1_05"),
+        ("Node 11", "!personal?.email", "Sang Node 12", "Sang Node 13", "C1_05", "C1_06"),
+        ("Node 13", "jobID != null", "Sang Node 14a", "Sang Node 15", "C1_07", "C1_06"),
+        ("Khối Job Try/Catch", "jobRepo.getById(jobID)", "Sang Node 15 (OK)", "Sang Node 14b (Lỗi)", "C1_07", "C1_08"),
+        ("Node 16", "sent == true (Kết quả gửi mail)", "Sang Node 17", "Sang Node 18", "C1_07", "C1_06")
+    ]
+
+    table_c2 = doc.add_table(rows=len(c2_data) + 1, cols=6)
+    table_c2.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(table_c2)
+
+    c2_headers = ["Điểm quyết định", "Biểu thức điều kiện tương ứng", "Nhánh Đúng (True)", "Nhánh Sai (False)", "Ca kiểm thử Đúng", "Ca kiểm thử Sai"]
+    c2_widths = [Inches(1.1), Inches(2.2), Inches(1.0), Inches(1.0), Inches(0.8), Inches(0.8)]
+
+    for j, h_text in enumerate(c2_headers):
+        cell = table_c2.rows[0].cells[j]
+        cell.width = c2_widths[j]
+        set_cell_background(cell, "1F4E79")
+        set_cell_margins(cell)
+        p = cell.paragraphs[0]
+        r = p.add_run(h_text)
+        r.bold = True
+        r.font.size = Pt(8.5)
+        r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+    for i, row_data in enumerate(c2_data):
+        row = table_c2.rows[i + 1]
+        for j, val in enumerate(row_data):
+            cell = row.cells[j]
+            cell.width = c2_widths[j]
             if i % 2 == 1:
                 set_cell_background(cell, "F9FAFB")
             set_cell_margins(cell)
             p = cell.paragraphs[0]
             r = p.add_run(val)
-            r.font.size = Pt(8.5)
+            r.font.size = Pt(8)
+            if j == 0 or j >= 4:
+                r.bold = True
+
+    doc.add_paragraph()
+
+    # 5.3 C3 Section
+    h_c3 = doc.add_heading("5.3. Sinh đường đi và ca kiểm thử ứng với độ đo C3 (Phủ điều kiện con)", level=2)
+    h_c3.style.font.color.rgb = RGBColor(0x2E, 0x75, 0xB6)
+
+    p_c3_intro = doc.add_paragraph()
+    r_c3_intro = p_c3_intro.add_run(
+        "Mục tiêu độ đo C3 (Condition Coverage): Các điều kiện con trong biểu thức phức hợp tại Node 1 (!input.candidateIds || input.candidateIds.length === 0) đều nhận cả hai giá trị Chân và Giả ít nhất một lần.\n\n"
+        "Bảng ma trận điều kiện con C3:"
+    )
+    r_c3_intro.font.size = Pt(9.5)
+    r_c3_intro.font.italic = True
+
+    c3_matrix = [
+        ("Node 1", "!input.candidateIds (A)", "True (candidateIds = null)", "TC_C3_01", "Sang Node 2", "True (Short-circuit)"),
+        ("Node 1", "!input.candidateIds (A)", "False (candidateIds = [])", "TC_C3_02", "Đánh giá tiếp B", "-"),
+        ("Node 1", "candidateIds.length === 0 (B)", "True (length = 0)", "TC_C3_02", "Sang Node 2", "True (Lỗi ds rỗng)"),
+        ("Node 1", "candidateIds.length === 0 (B)", "False (length = 1)", "TC_C3_03", "Sang Node 3", "False (Hợp lệ, đi tiếp)")
+    ]
+
+    table_c3_m = doc.add_table(rows=len(c3_matrix) + 1, cols=6)
+    table_c3_m.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(table_c3_m)
+
+    c3_m_headers = ["Điểm quyết định", "Điều kiện con tương ứng", "Giá trị kiểm tra", "Ca kiểm thử tương ứng", "Nhánh thực thi", "Kết quả biểu thức"]
+    c3_m_widths = [Inches(1.0), Inches(1.8), Inches(1.3), Inches(0.9), Inches(1.0), Inches(0.9)]
+
+    for j, h_text in enumerate(c3_m_headers):
+        cell = table_c3_m.rows[0].cells[j]
+        cell.width = c3_m_widths[j]
+        set_cell_background(cell, "2E75B6")
+        set_cell_margins(cell)
+        p = cell.paragraphs[0]
+        r = p.add_run(h_text)
+        r.bold = True
+        r.font.size = Pt(8.5)
+        r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+    for i, row_data in enumerate(c3_matrix):
+        row = table_c3_m.rows[i + 1]
+        for j, val in enumerate(row_data):
+            cell = row.cells[j]
+            cell.width = c3_m_widths[j]
+            if i % 2 == 1:
+                set_cell_background(cell, "F2F4F7")
+            set_cell_margins(cell)
+            p = cell.paragraphs[0]
+            r = p.add_run(val)
+            r.font.size = Pt(8)
+            if j == 0 or j == 3:
+                r.bold = True
+
+    doc.add_paragraph()
+
+    p_c3_detail = doc.add_paragraph()
+    r_c3_detail = p_c3_detail.add_run("Bảng danh sách ca kiểm thử chi tiết cho độ đo C3:")
+    r_c3_detail.font.size = Pt(9.5)
+    r_c3_detail.bold = True
+
+    c3_cases = [
+        ("TC_C3_01", "Kiểm tra lỗi khi danh sách là null hoặc undefined", "A = True", "candidateIds = null, title = 'Thư mời', content = 'Chào bạn'", "Ném lỗi: 'Danh sách ứng viên không được để trống.'"),
+        ("TC_C3_02", "Kiểm tra lỗi khi danh sách là mảng rỗng", "A = False, B = True", "candidateIds = [], title = 'Thư mời', content = 'Chào bạn'", "Ném lỗi: 'Danh sách ứng viên không được để trống.'"),
+        ("TC_C3_03", "Danh sách ứng viên hợp lệ có phần tử", "A = False, B = False", "candidateIds = ['CAN_01'], title = 'Thư mời', content = 'Chào bạn'", "Đi tiếp sang Node 3 (Kiểm tra tiêu đề email)")
+    ]
+
+    table_c3_c = doc.add_table(rows=len(c3_cases) + 1, cols=5)
+    table_c3_c.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(table_c3_c)
+
+    c3_c_headers = ["TT", "Tên ca kiểm thử", "Điều kiện con kích hoạt", "Dữ liệu đầu vào (Input)", "Đầu ra mong đợi"]
+    c3_c_widths = [Inches(0.8), Inches(1.9), Inches(1.1), Inches(1.6), Inches(1.5)]
+
+    for j, h_text in enumerate(c3_c_headers):
+        cell = table_c3_c.rows[0].cells[j]
+        cell.width = c3_c_widths[j]
+        set_cell_background(cell, "1F4E79")
+        set_cell_margins(cell)
+        p = cell.paragraphs[0]
+        r = p.add_run(h_text)
+        r.bold = True
+        r.font.size = Pt(8.5)
+        r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+    for i, row_data in enumerate(c3_cases):
+        row = table_c3_c.rows[i + 1]
+        for j, val in enumerate(row_data):
+            cell = row.cells[j]
+            cell.width = c3_c_widths[j]
+            if i % 2 == 1:
+                set_cell_background(cell, "F9FAFB")
+            set_cell_margins(cell)
+            p = cell.paragraphs[0]
+            r = p.add_run(val)
+            r.font.size = Pt(8)
             if j == 0:
                 r.bold = True
 
     doc.add_paragraph()
 
 def add_conclusion(doc):
-    h = doc.add_heading("7. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN", level=1)
+    h = doc.add_heading("6. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN", level=1)
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
     p = doc.add_paragraph()
     r = p.add_run(
-        "1. Độ bao phủ câu lệnh (C1 - Statement Coverage): Đạt 100% (22/22 khối lệnh cơ bản bao gồm cả đỉnh Start, khối Try 14a và Catch 14b được thực thi đầy đủ).\n"
-        "2. Độ bao phủ nhánh quyết định (C2 - Branch Coverage): Đạt 100% (tất cả 9 điểm quyết định và rẽ nhánh ngoại lệ True/False đều được duyệt qua).\n"
-        "3. Độ bao phủ điều kiện (C3 - Condition Coverage): Đạt 100% cho biểu thức logic phức hợp tại Node 1 (!candidateIds || length === 0) theo cơ chế ngắt mạch Short-circuit evaluation.\n\n"
+        "1. Độ bao phủ câu lệnh (C1 - Statement Coverage): Đạt 100% (22/22 khối lệnh cơ bản bao gồm cả đỉnh Start, khối Try 14a, Catch 14b và Catch ngoài Node 19 được thực thi đầy đủ qua 9 ca kiểm thử C1_01 - C1_09).\n"
+        "2. Độ bao phủ nhánh quyết định (C2 - Branch Coverage): Đạt 100% (tất cả 9 điểm quyết định và rẽ nhánh ngoại lệ True/False đều được kích hoạt đầy đủ qua ma trận điều kiện rẽ nhánh C2).\n"
+        "3. Độ bao phủ điều kiện (C3 - Condition Coverage): Đạt 100% cho biểu thức logic phức hợp tại Node 1 (!candidateIds || length === 0) theo đúng nguyên lý ngắt mạch Short-circuit evaluation.\n\n"
         "Bộ ca kiểm thử hộp trắng được thiết kế đảm bảo phát hiện sớm các khiếm khuyết trong logic xử lý danh sách rỗng, xử lý ngoại lệ mạng cơ sở dữ liệu, kiểm tra tính toàn vẹn dữ liệu ứng viên và bảo đảm tính chịu lỗi (Fault-tolerance) của hệ thống tuyển dụng."
     )
     r.font.size = Pt(10)
@@ -464,8 +539,7 @@ def main():
     add_blocks_table(doc)
     add_cfg_section(doc, base_dir)
     add_mccabe_section(doc)
-    add_paths_table(doc)
-    add_testcases_table(doc)
+    add_section_5(doc)
     add_conclusion(doc)
 
     out_path = os.path.join(base_dir, "KiemThuHopTrang_UC09_TuDongHoaGuiEmail.docx")

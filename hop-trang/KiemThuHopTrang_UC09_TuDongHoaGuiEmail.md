@@ -368,66 +368,85 @@ $$\Rightarrow V(G) = R = 10$$
 
 ---
 
-## 5. THIẾT KẾ CÁC ĐƯỜNG DẪN CƠ SỞ (BASIS PATHS)
+## 5. SINH CÁC ĐƯỜNG ĐI VÀ CA KIỂM THỬ THEO C1, C2, C3
 
-| Mã đường dẫn | Chuỗi các khối lệnh (Nodes Sequence) | Mục tiêu bao phủ |
-| :---: | :--- | :--- |
-| **Path 1** | $Start \rightarrow 1 \rightarrow 2$ | Nhánh lỗi danh sách ứng viên rỗng / undefined |
-| **Path 2** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 4$ | Nhánh lỗi tiêu đề email bị để trống |
-| **Path 3** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 6$ | Nhánh lỗi nội dung email bị để trống |
-| **Path 4** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 20$ | Nhánh danh sách ứng viên hợp lệ nhưng vòng lặp 0 lần |
-| **Path 5** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 10 \rightarrow 8 \rightarrow 20$ | Nhánh không tìm thấy ứng viên trong database (`candidate === null`) |
-| **Path 6** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 12 \rightarrow 8 \rightarrow 20$ | Nhánh ứng viên không có địa chỉ email |
-| **Path 7** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 13 \rightarrow 15 \rightarrow 16 \rightarrow 18 \rightarrow 8 \rightarrow 20$ | Nhánh không có `jobID`, gửi email qua SMTP thất bại (`sent === false`) |
-| **Path 8** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 13 \rightarrow 14a \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | Nhánh Happy Path: có `jobID`, truy vấn Job thành công (qua 14a), gửi email thành công |
-| **Path 9** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 13 \rightarrow 14a \rightarrow 14b \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | Nhánh có `jobID` nhưng truy vấn Job lỗi (qua 14b), bắt log cảnh báo và vẫn gửi email |
-| **Path 10**| $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 19 \rightarrow 8 \rightarrow 20$ | Nhánh phát sinh ngoại lệ đột ngột trong khối `try` ngoài (Runtime Exception) |
+### 5.1. Sinh đường đi và ca kiểm thử ứng với độ đo C1
 
----
+**Mục tiêu độ đo C1 (Statement Coverage):** Đảm bảo tất cả các khối lệnh (Node) trong đồ thị dòng điều khiển (từ Start, Node 1 đến Node 20, bao gồm cả Node 14a, 14b, 19) đều được thực thi ít nhất một lần qua tập các ca kiểm thử.
 
-## 6. THIẾT KẾ BẢNG CA KIỂM THỬ HỘP TRẮNG (WHITE-BOX TEST CASES)
-
-### 6.1. Bảng ca kiểm thử đáp ứng độ đo C1 (Statement Coverage) & C2 (Branch Coverage)
-
-| Mã Test Case | Đường đi (Basis Path) | Dữ liệu đầu vào (Test Input Data) | Trạng thái Mock / Giả lập hệ thống | Kết quả mong đợi (Expected Output) | Đánh giá |
-| :---: | :--- | :--- | :--- | :--- | :---: |
-| **TC_WB_01** | Path 1: $Start \rightarrow 1 \rightarrow 2$ | `candidateIds: []`, `title: "Thư mời"`, `content: "Nội dung"` | Không tương tác Repo | Ném ngoại lệ: `'Danh sách ứng viên không được để trống.'` | Đạt |
-| **TC_WB_02** | Path 2: $Start \rightarrow 1 \rightarrow 3 \rightarrow 4$ | `candidateIds: ['C01']`, `title: "   "`, `content: "Nội dung"` | Không tương tác Repo | Ném ngoại lệ: `'Tiêu đề email không được để trống.'` | Đạt |
-| **TC_WB_03** | Path 3: $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 6$ | `candidateIds: ['C01']`, `title: "Thư mời"`, `content: ""` | Không tương tác Repo | Ném ngoại lệ: `'Nội dung email không được để trống.'` | Đạt |
-| **TC_WB_04** | Path 5: $Start \dots \rightarrow 8 \rightarrow 9 \rightarrow 10 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['CAN_UNKNOWN']`, `title: "Hẹn PV"`, `content: "Chào bạn"` | `candidateRepo.getById('CAN_UNKNOWN')` trả về `null` | Trả về `totalSent: 0`, `failed` chứa `error: 'Không tìm thấy ứng viên.'` | Đạt |
-| **TC_WB_05** | Path 6: $Start \dots \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 12 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C02']`, `title: "Hẹn PV"`, `content: "Chào bạn"` | Candidate tìm thấy nhưng `personal.email = undefined` | Trả về `totalSent: 0`, `failed` chứa `error: 'Ứng viên không có email.'` | Đạt |
-| **TC_WB_06** | Path 7: $Start \dots \rightarrow 13 \rightarrow 15 \rightarrow 16 \rightarrow 18 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C03']`, `title: "Hẹn PV"`, `content: "Chào [Tên Ứng Viên]"` | Candidate hợp lệ, `jobID = null`, `mailSvc.sendEmail` trả về `false` | Trả về `totalSent: 0`, `failed` chứa `error: 'Lỗi gửi email từ dịch vụ mail.'` | Đạt |
-| **TC_WB_07** | Path 8: $Start \dots \rightarrow 13 \rightarrow 14a \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C04']`, `title: "Tuyển dụng [Vị Trí]"`, `content: "Chào [Tên Ứng Viên]"` | Candidate hợp lệ, `jobID = 'JOB_01'`, `jobRepo.getById` trả về Job, `mailSvc.sendEmail` trả về `true` | Trả về `totalSent: 1`, `failed: []`, `message: 'Gửi email thành công tới 1/1 ứng viên.'` (Happy Path) | Đạt |
-| **TC_WB_08** | Path 9: $Start \dots \rightarrow 13 \rightarrow 14a \rightarrow 14b \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C05']`, `title: "Tuyển dụng [Vị Trí]"`, `content: "Chào bạn"` | Candidate hợp lệ, `jobID = 'JOB_ERR'`, `jobRepo.getById` ném Exception mạng $\rightarrow$ bắt tại Node 14b | In `console.warn`, email vẫn gửi thành công không có tên job, `totalSent: 1` | Đạt |
-| **TC_WB_09** | Path 10: $Start \dots \rightarrow 11 \rightarrow 19 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C06']`, `title: "Hẹn PV"`, `content: "Chào bạn"` | `candidate.getPersonal()` ném ngoại lệ đột ngột: `Error('Crash')` | Khối `catch` (Node 19) bắt lỗi, thêm vào mảng `failed` với thông điệp: `'Crash'` | Đạt |
-| **TC_WB_10** | Path 4: $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 20$ | `candidateIds: []` (sau validate bypass), `title: "Thư mời"`, `content: "Nội dung"` | Danh sách ứng viên rỗng đã qua bước validate | Trả về `totalSent: 0`, `failed: []`, thoát ngay sau vòng for | Đạt |
+| TT | Đường đi theo Node | Dữ liệu đầu vào (Input) | Đầu ra mong đợi | Đầu ra thực tế | Ghi chú |
+| :---: | :--- | :--- | :--- | :---: | :--- |
+| **C1_01** | $Start \rightarrow 1 \rightarrow 2$ | `candidateIds: []`, `title: "Thư mời phỏng vấn"`, `content: "Nội dung email"` | Ném lỗi: `"Danh sách ứng viên không được để trống."` | Đạt | Phủ Node 1, 2 |
+| **C1_02** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 4$ | `candidateIds: ["CAN_01"]`, `title: "   "`, `content: "Nội dung email"` | Ném lỗi: `"Tiêu đề email không được để trống."` | Đạt | Phủ Node 3, 4 |
+| **C1_03** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 6$ | `candidateIds: ["CAN_01"]`, `title: "Thư mời phỏng vấn"`, `content: ""` | Ném lỗi: `"Nội dung email không được để trống."` | Đạt | Phủ Node 5, 6 |
+| **C1_04** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 10 \rightarrow 8 \rightarrow 20$ | `candidateIds: ["CAN_UNKNOWN"]`, `title: "Thư mời"`, `content: "Chào bạn"`, DB không có ứng viên | Trả về: `totalSent: 0`, `failed` chứa `error: 'Không tìm thấy ứng viên.'` | Đạt | Phủ Node 7, 8, 9, 10, 20 |
+| **C1_05** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 12 \rightarrow 8 \rightarrow 20$ | `candidateIds: ["CAN_02"]`, `title: "Thư mời"`, `content: "Chào bạn"`, `personal.email = undefined` | Trả về: `totalSent: 0`, `failed` chứa `error: 'Ứng viên không có email.'` | Đạt | Phủ Node 11, 12 |
+| **C1_06** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 13 \rightarrow 15 \rightarrow 16 \rightarrow 18 \rightarrow 8 \rightarrow 20$ | `candidateIds: ["CAN_03"]`, `jobID: null`, `mailSvc.sendEmail` trả về `false` | Trả về: `totalSent: 0`, `failed` chứa `error: 'Lỗi gửi email từ dịch vụ mail.'` | Đạt | Phủ Node 13, 15, 16, 18 |
+| **C1_07** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 13 \rightarrow 14a \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | `candidateIds: ["CAN_04"]`, `jobID: "JOB_01"`, `jobRepo` tìm thấy Job, `mailSvc.sendEmail` trả về `true` | Trả về: `totalSent: 1`, `failed: []`, `message: "Gửi email thành công tới 1/1 ứng viên."` | Đạt | Phủ Node 14a, 17 (Happy Path) |
+| **C1_08** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 13 \rightarrow 14a \rightarrow 14b \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | `candidateIds: ["CAN_05"]`, `jobID: "JOB_ERR"`, `jobRepo.getById` ném Exception mạng | Bắt tại Node 14b, ghi log cảnh báo, email vẫn được gửi bình thường, `totalSent: 1` | Đạt | Phủ Node 14b |
+| **C1_09** | $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 11 \rightarrow 19 \rightarrow 8 \rightarrow 20$ | `candidateIds: ["CAN_06"]`, `candidate.getPersonal()` ném ngoại lệ bất ngờ: `Error('DB Crash')` | Bắt tại khối catch ngoài (Node 19), ghi nhận lỗi vào `failed`, `totalSent: 0` | Đạt | Phủ Node 19 |
 
 ---
 
-### 6.2. Kiểm tra độ đo bao phủ điều kiện C3 (Condition Coverage cho Node 1)
+### 5.2. Sinh đường đi và ca kiểm thử ứng với độ đo C2
 
-Biểu thức điều kiện tại Node 1 (Dòng 9): `!input.candidateIds || input.candidateIds.length === 0`
+**Mục tiêu độ đo C2 (Branch / Decision Coverage):** Mỗi điểm quyết định trong đồ thị đều được duyệt qua cả hai nhánh Đúng (True) và Sai (False) ít nhất một lần.
 
-| Ca kiểm thử C3 | `!input.candidateIds` ($A$) | `input.candidateIds.length === 0` ($B$) | Kết quả biểu thức ($A \lor B$) | Nhánh rẽ | Dữ liệu đầu vào minh họa |
-| :---: | :---: | :---: | :---: | :---: | :--- |
-| **C3_01** | **True** | Không xét (Short-circuit) | **True** | Node 2 (Ném ngoại lệ) | `input.candidateIds = null` hoặc `undefined` |
-| **C3_02** | **False** | **True** | **True** | Node 2 (Ném ngoại lệ) | `input.candidateIds = []` (Mảng rỗng) |
-| **C3_03** | **False** | **False** | **False** | Node 3 (Đi tiếp) | `input.candidateIds = ['CAN_01']` |
+**Bảng ma trận điều kiện rẽ nhánh C2:**
 
-$\Rightarrow$ **Kết luận C3:** 3 ca kiểm thử trên đảm bảo mỗi điều kiện thành phần $A$ và $B$ đều được đánh giá đầy đủ cả hai giá trị chân lý Đúng (True) và Sai (False), đạt **100% độ bao phủ điều kiện C3**.
+| Điểm quyết định | Biểu thức điều kiện tương ứng | Nhánh Đúng (True) | Nhánh Sai (False) | Ca kiểm thử Đúng | Ca kiểm thử Sai |
+| :---: | :--- | :---: | :---: | :---: | :---: |
+| **Node 1** | `!input.candidateIds \|\| input.candidateIds.length === 0` | Sang Node 2 | Sang Node 3 | C1_01 | C1_02 |
+| **Node 3** | `!input.title \|\| input.title.trim() === ''` | Sang Node 4 | Sang Node 5 | C1_02 | C1_03 |
+| **Node 5** | `!input.content \|\| input.content.trim() === ''` | Sang Node 6 | Sang Node 7 | C1_03 | C1_04 |
+| **Node 8** | `i < candidates.length` (Vòng lặp `for`) | Sang Node 9 | Sang Node 20 | C1_04 (Lần lặp 1) | C1_04 (Hết mảng) |
+| **Node 9** | `!candidate` | Sang Node 10 | Sang Node 11 | C1_04 | C1_05 |
+| **Node 11** | `!personal?.email` | Sang Node 12 | Sang Node 13 | C1_05 | C1_06 |
+| **Node 13** | `jobID != null` | Sang Node 14a | Sang Node 15 | C1_07 | C1_06 |
+| **Node 14a / 14b** | Khối Try/Catch truy vấn `jobRepo.getById(jobID)` | Sang Node 15 (OK) | Sang Node 14b (Lỗi) | C1_07 | C1_08 |
+| **Node 16** | `sent == true` (Kết quả gửi email) | Sang Node 17 | Sang Node 18 | C1_07 | C1_06 |
 
 ---
 
-## 7. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN
+### 5.3. Sinh đường đi và ca kiểm thử ứng với độ đo C3 (Phủ điều kiện con)
+
+**Mục tiêu độ đo C3 (Condition / Multiple Condition Coverage):** Các điều kiện con trong biểu thức phức hợp tại **Node 1** (`!input.candidateIds || input.candidateIds.length === 0`) đều nhận cả hai giá trị Chân (True) và Giả (False) ít nhất một lần.
+
+- Ký hiệu:
+  - Điều kiện con **$A$**: `!input.candidateIds`
+  - Điều kiện con **$B$**: `input.candidateIds.length === 0`
+- Cơ chế đánh giá ngắt mạch (**Short-circuit evaluation**) của toán tử logic `||`:
+  - Khi $A$ là **True** $\rightarrow$ Biểu thức lập tức nhận giá trị **True**, ngắt mạch và nhảy sang **Node 2** mà không cần đánh giá $B$.
+  - Khi $A$ là **False** $\rightarrow$ Hệ thống tiếp tục đánh giá điều kiện con $B$:
+    - Nếu $B$ là **True** $\rightarrow$ Biểu thức nhận giá trị **True**, nhảy sang **Node 2**.
+    - Nếu $B$ là **False** $\rightarrow$ Biểu thức nhận giá trị **False**, chuyển sang **Node 3**.
+
+**Bảng ma trận điều kiện con C3:**
+
+| Điểm quyết định | Điều kiện con tương ứng | Giá trị kiểm tra | Ca kiểm thử tương ứng | Nhánh thực thi | Kết quả biểu thức |
+| :---: | :--- | :---: | :---: | :---: | :---: |
+| **Node 1** | $A$: `!input.candidateIds` | True (`candidateIds = null`) | TC_C3_01 | Sang Node 2 | True (Short-circuit ngắt mạch) |
+| **Node 1** | $A$: `!input.candidateIds` | False (`candidateIds = []`) | TC_C3_02 | Đánh giá tiếp $B$ | - |
+| **Node 1** | $B$: `candidateIds.length === 0` | True (`length = 0`) | TC_C3_02 | Sang Node 2 | True (Lỗi danh sách rỗng) |
+| **Node 1** | $B$: `candidateIds.length === 0` | False (`length = 1`) | TC_C3_03 | Sang Node 3 | False (Hợp lệ, đi tiếp) |
+
+**Bảng danh sách ca kiểm thử chi tiết cho độ đo C3:**
+
+| TT | Tên ca kiểm thử | Điều kiện con kích hoạt | Dữ liệu đầu vào (Input) | Đầu ra mong đợi |
+| :---: | :--- | :---: | :--- | :--- |
+| **TC_C3_01** | Kiểm tra lỗi khi danh sách ứng viên là `null` hoặc `undefined` | $A = \text{True}$ | `candidateIds = null`, `title = "Thư mời"`, `content = "Chào bạn"` | Ném lỗi: `"Danh sách ứng viên không được để trống."` |
+| **TC_C3_02** | Kiểm tra lỗi khi danh sách ứng viên là mảng rỗng | $A = \text{False}, B = \text{True}$ | `candidateIds = []`, `title = "Thư mời"`, `content = "Chào bạn"` | Ném lỗi: `"Danh sách ứng viên không được để trống."` |
+| **TC_C3_03** | Danh sách ứng viên hợp lệ có phần tử | $A = \text{False}, B = \text{False}$ | `candidateIds = ['CAN_01']`, `title = "Thư mời"`, `content = "Chào bạn"` | Đi tiếp sang Node 3 (Kiểm tra tiêu đề email) |
+
+---
+
+## 6. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN
 
 1. **Độ bao phủ câu lệnh ($C_1$ - Statement Coverage):**
-   - Tổng số khối lệnh (Basic Blocks): $21/21$ khối.
-   - Số khối được thực thi qua tập Test Cases: $21/21$ khối (bao gồm cả khối Try 14a và khối Catch 14b).
-   - **Tỷ lệ bao phủ $C_1$:** $\mathbf{100\%}$.
-
+   - Đạt **100%** bao phủ tất cả 22/22 khối lệnh (từ Start, Node 1 đến Node 20, bao gồm cả đỉnh ngoại lệ Try 14a, Catch 14b và Catch ngoài Node 19).
 2. **Độ bao phủ nhánh quyết định ($C_2$ - Branch Coverage):**
-   - Tất cả 9 điểm quyết định và rẽ nhánh ngoại lệ đều được kích hoạt đầy đủ 2 nhánh **Đúng (True)** và **Sai (False)**.
-   - **Tỷ lệ bao phủ $C_2$:** $\mathbf{100\%}$.
-
-3. **Tính độc lập và khả năng bảo trì:**
-   - Bộ Test Case bao phủ toàn diện cả các trường hợp biên dữ liệu rỗng (Boundary Values), các nhánh lỗi logic ứng viên không tồn tại, lỗi thiếu email, lỗi dịch vụ gửi thư SMTP bên ngoài, lỗi kết nối cơ sở dữ liệu khi truy vấn công việc và ngoại lệ thời gian chạy (Runtime Exception).
+   - Đạt **100%** bao phủ tất cả 9 điểm quyết định rẽ nhánh logic và ngoại lệ đều được duyệt qua cả hai hướng Đúng (True) và Sai (False).
+3. **Độ bao phủ điều kiện ($C_3$ - Condition Coverage):**
+   - Đạt **100%** cho biểu thức phức hợp tại Node 1 (`!input.candidateIds || input.candidateIds.length === 0`) theo đúng nguyên lý ngắt mạch (Short-circuit).
+4. **Tính bền vững và khả năng bảo trì:**
+   - Bộ ca kiểm thử hộp trắng bao phủ toàn diện cả các trường hợp biên rỗng, xử lý ngoại lệ mạng cơ sở dữ liệu, kiểm tra tính toàn vẹn dữ liệu ứng viên và bảo đảm tính chịu lỗi (Fault-tolerance) của hệ thống tuyển dụng.

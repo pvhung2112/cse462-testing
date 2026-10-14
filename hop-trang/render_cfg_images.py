@@ -138,8 +138,8 @@ def create_cfg_c1_c2(output_path):
     draw_arrow(cx, 78.25, cx, 66, label='False', label_offset=(3.5, 0))
 
     draw_arrow(76, 79.25, 76, 73.5, label='Lỗi', label_offset=(2.5, 0))
-    draw_elbow_arrow([(64, 82), (58, 82), (58, 66)], label='OK', label_offset=(-2, 1.5))
-    draw_elbow_arrow([(64, 71), (58, 71), (58, 66)])
+    draw_elbow_arrow([(64, 80.5), (57, 80.5), (57, 64.5), (53, 64.5)], label='Thành công', label_idx=1, label_offset=(-5.5, 0))
+    draw_elbow_arrow([(64, 71), (55, 71), (55, 62), (53, 62)])
 
     draw_arrow(cx, 60, cx, 52.75)
 
@@ -298,8 +298,8 @@ def create_cfg_c3(output_path):
     draw_arrow(cx, 76.25, cx, 64, label='False', label_offset=(3.5, 0))
 
     draw_arrow(76, 77.25, 76, 71.5, label='Lỗi', label_offset=(2.5, 0))
-    draw_elbow_arrow([(64, 80), (58, 80), (58, 64)], label='OK', label_offset=(-2, 1.5))
-    draw_elbow_arrow([(64, 69), (58, 69), (58, 64)])
+    draw_elbow_arrow([(64, 78.5), (57, 78.5), (57, 62.5), (53, 62.5)], label='Thành công', label_idx=1, label_offset=(-5.5, 0))
+    draw_elbow_arrow([(64, 69), (55, 69), (55, 60), (53, 60)])
 
     draw_arrow(cx, 58, cx, 50.75)
 
