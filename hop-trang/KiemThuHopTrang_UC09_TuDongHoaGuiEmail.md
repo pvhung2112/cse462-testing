@@ -18,115 +18,126 @@
 
 ## 1. MÃ NGUỒN ĐÁNH SỐ DÒNG
 
-Dưới đây là mã nguồn chuẩn hóa của phương thức `execute` thuộc lớp `SendBulkEmailUseCase` được đánh số thứ tự dòng thực thi:
+Dưới đây là mã nguồn chuẩn hóa của lớp `SendBulkEmailUseCase` được đánh số thứ tự dòng thực thi:
 
 ```typescript
-1:  async execute(input: SendBulkEmailInput): Promise<SendBulkEmailResult> {
-2:    if (!input.candidateIds || input.candidateIds.length === 0) {
-3:      throw new Error('Danh sách ứng viên không được để trống.');
-4:    }
-5:
-6:    if (!input.title?.trim()) {
-7:      throw new Error('Tiêu đề email không được để trống.');
-8:    }
-9:
-10:   if (!input.content?.trim()) {
-11:     throw new Error('Nội dung email không được để trống.');
-12:   }
-13:
-14:   const failed: Array<{
-15:     candidateId: string;
-16:     candidateName?: string;
-17:     error: string;
-18:   }> = [];
-19:   let totalSent = 0;
+1:  class SendBulkEmailUseCase {
+2:    constructor(
+3:      private readonly candidateRepo: ICandidateReadRepo,
+4:      private readonly jobRepo: IJobReadRepo,
+5:      private readonly mailSvc: IMailService,
+6:    ) { }
+7:
+8:    async execute(input: SendBulkEmailInput): Promise<SendBulkEmailResult> {
+9:      if (!input.candidateIds || input.candidateIds.length === 0) {
+10:       throw new Error('Danh sách ứng viên không được để trống.');
+11:     }
+12:
+13:     if (!input.title?.trim()) { 
+14:       throw new Error('Tiêu đề email không được để trống.');
+15:     }
+16:
+17:     if (!input.content?.trim()) {
+18:       throw new Error('Nội dung email không được để trống.');
+19:     }
 20:
-21:   const candidatePromises = input.candidateIds.map(id =>
-22:     this.candidateRepo.getById(id)
-23:   );
-24:   const candidates = await Promise.all(candidatePromises);
-25:
-26:   for (let i = 0; i < candidates.length; i++) {
-27:     const candidate = candidates[i];
-28:     const candidateId = input.candidateIds[i]!;
-29:
-30:     try {
-31:       if (!candidate) {
-32:         failed.push({
-33:           candidateId,
-34:           error: 'Không tìm thấy ứng viên.',
-35:         });
-36:         continue;
-37:       }
-38:
-39:       const personal = candidate.getPersonal();
-40:       if (!personal?.email) {
-41:         failed.push({
-42:           candidateId,
-43:           candidateName: personal?.fullName,
-44:           error: 'Ứng viên không có email.',
-45:         });
-46:         continue;
-47:       }
-48:
-49:       let jobTitle: string | undefined;
-50:       const jobID = candidate.getJobID();
-51:       if (jobID) {
-52:         try {
-53:           const job = await this.jobRepo.getById(jobID.toString());
-54:           jobTitle = job?.getTitle();
-55:         } catch (e) {
-56:           console.warn(`Could not fetch job for candidate ${candidateId}`);
-57:         }
-58:       }
-59:
-60:       const personalizedTitle = this.replacePlaceholders(input.title, candidate, jobTitle);
-61:       const personalizedContent = this.replacePlaceholders(input.content, candidate, jobTitle);
-62:
-63:       const htmlContent = `
-64:         <html>
-65:           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-66:             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-67:               ${personalizedContent.split('\n').map(line => `<p>${line}</p>`).join('')}
-68:             </div>
-69:           </body>
-70:         </html>
-71:       `;
-72:
-73:       const sent = await this.mailSvc.sendEmail(
-74:         personal.email,
-75:         personalizedTitle,
-76:         htmlContent,
-77:       );
-78:
-79:       if (sent) {
-80:         totalSent++;
-81:       } else {
-82:         failed.push({
-83:           candidateId,
-84:           candidateName: personal?.fullName,
-85:           error: 'Lỗi gửi email từ dịch vụ mail.',
-86:         });
-87:       }
-88:     } catch (error: unknown) {
-89:       const e = error as { message?: string };
-90:       const personal = candidate?.getPersonal();
-91:       failed.push({
-92:         candidateId,
-93:         candidateName: personal?.fullName,
-94:         error: e.message ?? 'Lỗi không xác định.',
-95:       });
-96:     }
-97:   }
-98:
-99:   return {
-100:    success: true,
-101:    message: `Gửi email thành công tới ${totalSent}/${input.candidateIds.length} ứng viên.`,
-102:    totalSent,
-103:    failed,
-104:  };
-105: }
+21:     const failed: Array<{
+22:       candidateId: string;
+23:       candidateName?: string;
+24:       error: string;
+25:     }> = [];
+26:     let totalSent = 0;
+27:
+28:     const candidatePromises = input.candidateIds.map(id =>
+29:       this.candidateRepo.getById(id)
+30:     );
+31:     const candidates = await Promise.all(candidatePromises);
+32:
+33:     for (let i = 0; i < candidates.length; i++) {
+34:       const candidate = candidates[i];
+35:       const candidateId = input.candidateIds[i]!;
+36:
+37:       try {
+38:         if (!candidate) {
+39:           failed.push({
+40:             candidateId,
+41:             error: 'Không tìm thấy ứng viên.',
+42:           });
+43:           continue;
+44:         }
+45:
+46:         const personal = candidate.getPersonal();
+47:         if (!personal?.email) {
+48:           failed.push({
+49:             candidateId,
+50:             candidateName: personal?.fullName,
+51:             error: 'Ứng viên không có email.',
+52:           });
+53:           continue;
+54:         }
+55:
+56:         let jobTitle: string | undefined;
+57:         const jobID = candidate.getJobID();
+58:         if (jobID) {
+59:           try {
+60:             const job = await this.jobRepo.getById(jobID.toString());
+61:             jobTitle = job?.getTitle();
+62:           } catch (e) {
+63:             console.warn(`Could not fetch job for candidate ${candidateId}`);
+64:           }
+65:         }
+66:
+67:         const personalizedTitle = this.replacePlaceholders(input.title, candidate, jobTitle);
+68:         const personalizedContent = this.replacePlaceholders(input.content, candidate, jobTitle);
+69:
+70:         const htmlContent = `
+71:           <html>
+72:             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+73:               <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+74:                 ${personalizedContent.split('\n').map(line => `<p>${line}</p>`).join('')}
+75:               </div>
+76:             </body>
+77:           </html>
+78:         `;
+79:
+80:         // Send email
+81:         const sent = await this.mailSvc.sendEmail(
+82:           personal.email,
+83:           personalizedTitle,
+84:           htmlContent,
+85:         );
+86:
+87:         if (sent) {
+88:           totalSent++;
+89:         } else {
+90:           failed.push({
+91:             candidateId,
+92:             candidateName: personal?.fullName,
+93:             error: 'Lỗi gửi email từ dịch vụ mail.',
+94:           });
+95:         }
+96:       } catch (error: unknown) {
+97:         const e = error as { message?: string };
+98:         const personal = candidate?.getPersonal();
+99:         failed.push({
+100:          candidateId,
+101:          candidateName: personal?.fullName,
+102:          error: e.message ?? 'Lỗi không xác định.',
+103:        });
+104:      }
+105:    }
+106:
+107:    return {
+108:      success: true,
+109:      message: `Gửi email thành công tới ${totalSent}/${input.candidateIds.length} ứng viên.`,
+110:      totalSent,
+111:      failed,
+112:    };
+113:  }
+114:}
 ```
+
+*(Ghi chú: Dòng 1–6 là khai báo cấu trúc Class và Constructor Dependency Injection, không chứa luồng điều khiển nghiệp vụ. Đồ thị CFG được xây dựng cho phương thức `execute` từ dòng 8).*
 
 ---
 
@@ -136,24 +147,24 @@ Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh 
 
 | Khối (Node) | Dòng mã nguồn | Nội dung thực thi chi tiết | Loại đỉnh (Node Type) |
 | :---------: | :------------ | :------------------------- | :-------------------- |
-| **Node 1**  | Dòng 1–2      | Tiếp nhận `input`, kiểm tra `if (!input.candidateIds \|\| input.candidateIds.length === 0)` | Decision (Điểm quyết định 1) |
-| **Node 2**  | Dòng 3        | `throw new Error('Danh sách ứng viên không được để trống.')` | Exit (Ngoại lệ 1) |
-| **Node 3**  | Dòng 6        | Kiểm tra tiêu đề `if (!input.title?.trim())` | Decision (Điểm quyết định 2) |
-| **Node 4**  | Dòng 7        | `throw new Error('Tiêu đề email không được để trống.')` | Exit (Ngoại lệ 2) |
-| **Node 5**  | Dòng 10       | Kiểm tra nội dung `if (!input.content?.trim())` | Decision (Điểm quyết định 3) |
-| **Node 6**  | Dòng 11       | `throw new Error('Nội dung email không được để trống.')` | Exit (Ngoại lệ 3) |
-| **Node 7**  | Dòng 14–26    | Khởi tạo `failed = []`, `totalSent = 0`, lấy `candidates`, kiểm tra vòng lặp `for (i < candidates.length)` | Decision / Loop Header (Điểm quyết định 4) |
-| **Node 8**  | Dòng 27–31    | Lấy `candidate`, `candidateId`, bắt đầu `try`, kiểm tra `if (!candidate)` | Decision (Điểm quyết định 5) |
-| **Node 9**  | Dòng 32–36    | Thêm lỗi `failed.push(...)`, `continue` (quay lại đỉnh vòng lặp Node 7) | Process (Xử lý rẽ nhánh) |
-| **Node 10** | Dòng 39–40    | Lấy `personal = candidate.getPersonal()`, kiểm tra `if (!personal?.email)` | Decision (Điểm quyết định 6) |
-| **Node 11** | Dòng 41–46    | Thêm lỗi `failed.push(...)`, `continue` (quay lại đỉnh vòng lặp Node 7) | Process (Xử lý rẽ nhánh) |
-| **Node 12** | Dòng 49–51    | Khởi tạo `jobTitle`, lấy `jobID`, kiểm tra `if (jobID)` | Decision (Điểm quyết định 7) |
-| **Node 13** | Dòng 52–57    | Khối `try-catch` truy vấn công việc `jobRepo.getById(jobID)` lấy `jobTitle` | Process (Xử lý) |
-| **Node 14** | Dòng 60–78    | Thay thế `replacePlaceholders`, dựng `htmlContent`, gọi `mailSvc.sendEmail(...)`, kiểm tra `if (sent)` | Decision (Điểm quyết định 8) |
-| **Node 15** | Dòng 80       | Tăng biến đếm gửi thành công: `totalSent++` | Process (Xử lý) |
-| **Node 16** | Dòng 82–86    | Thêm lỗi gửi mail thất bại: `failed.push(...)` | Process (Xử lý) |
-| **Node 17** | Dòng 88–95    | Bắt ngoại lệ khối ngoài: `catch (error) { failed.push(...) }` | Exception Handler (Xử lý ngoại lệ) |
-| **Node 18** | Dòng 99–104   | Hết vòng lặp `for`: tạo kết quả và trả về `return { success: true, ... }` | Exit (Thoát bình thường) |
+| **Node 1**  | Dòng 8–9      | Tiếp nhận `input`, kiểm tra `if (!input.candidateIds \|\| input.candidateIds.length === 0)` | Decision (Điểm quyết định 1) |
+| **Node 2**  | Dòng 10       | `throw new Error('Danh sách ứng viên không được để trống.')` | Exit (Ngoại lệ 1) |
+| **Node 3**  | Dòng 13       | Kiểm tra tiêu đề `if (!input.title?.trim())` | Decision (Điểm quyết định 2) |
+| **Node 4**  | Dòng 14       | `throw new Error('Tiêu đề email không được để trống.')` | Exit (Ngoại lệ 2) |
+| **Node 5**  | Dòng 17       | Kiểm tra nội dung `if (!input.content?.trim())` | Decision (Điểm quyết định 3) |
+| **Node 6**  | Dòng 18       | `throw new Error('Nội dung email không được để trống.')` | Exit (Ngoại lệ 3) |
+| **Node 7**  | Dòng 21–33    | Khởi tạo `failed = []`, `totalSent = 0`, lấy `candidates`, kiểm tra vòng lặp `for (i < candidates.length)` | Decision / Loop Header (Điểm quyết định 4) |
+| **Node 8**  | Dòng 34–38    | Lấy `candidate`, `candidateId`, bắt đầu `try`, kiểm tra `if (!candidate)` | Decision (Điểm quyết định 5) |
+| **Node 9**  | Dòng 39–43    | Thêm lỗi `failed.push(...)`, `continue` (quay lại đỉnh vòng lặp Node 7) | Process (Xử lý rẽ nhánh) |
+| **Node 10** | Dòng 46–47    | Lấy `personal = candidate.getPersonal()`, kiểm tra `if (!personal?.email)` | Decision (Điểm quyết định 6) |
+| **Node 11** | Dòng 48–53    | Thêm lỗi `failed.push(...)`, `continue` (quay lại đỉnh vòng lặp Node 7) | Process (Xử lý rẽ nhánh) |
+| **Node 12** | Dòng 56–58    | Khởi tạo `jobTitle`, lấy `jobID`, kiểm tra `if (jobID)` | Decision (Điểm quyết định 7) |
+| **Node 13** | Dòng 59–64    | Khối `try-catch` truy vấn công việc `jobRepo.getById(jobID)` lấy `jobTitle` | Process (Xử lý) |
+| **Node 14** | Dòng 67–85    | Thay thế `replacePlaceholders`, dựng `htmlContent`, gọi `mailSvc.sendEmail(...)`, kiểm tra `if (sent)` | Decision (Điểm quyết định 8) |
+| **Node 15** | Dòng 87–88    | Tăng biến đếm gửi thành công: `totalSent++` | Process (Xử lý) |
+| **Node 16** | Dòng 89–94    | Thêm lỗi gửi mail thất bại: `failed.push(...)` | Process (Xử lý) |
+| **Node 17** | Dòng 96–103   | Bắt ngoại lệ khối ngoài: `catch (error) { failed.push(...) }` | Exception Handler (Xử lý ngoại lệ) |
+| **Node 18** | Dòng 107–112  | Hết vòng lặp `for`: tạo kết quả và trả về `return { success: true, ... }` | Exit (Thoát bình thường) |
 
 ---
 
@@ -254,7 +265,7 @@ $$\Rightarrow V(G) = R = 9$$
 | **Path 1** | $1 \rightarrow 2$ | Nhánh lỗi danh sách ứng viên rỗng / undefined |
 | **Path 2** | $1 \rightarrow 3 \rightarrow 4$ | Nhánh lỗi tiêu đề email bị để trống |
 | **Path 3** | $1 \rightarrow 3 \rightarrow 5 \rightarrow 6$ | Nhánh lỗi nội dung email bị để trống |
-| **Path 4** | $1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 18$ | Nhánh danh sách ứng viên hợp lệ nhưng vòng lặp 0 lần (Mảng rỗng sau xử lý) |
+| **Path 4** | $1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 18$ | Nhánh danh sách ứng viên hợp lệ nhưng vòng lặp 0 lần |
 | **Path 5** | $1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 9 \rightarrow 7 \rightarrow 18$ | Nhánh không tìm thấy ứng viên trong database (`candidate === null`) |
 | **Path 6** | $1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 10 \rightarrow 11 \rightarrow 7 \rightarrow 18$ | Nhánh ứng viên không có địa chỉ email |
 | **Path 7** | $1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 10 \rightarrow 12 \rightarrow 14 \rightarrow 16 \rightarrow 7 \rightarrow 18$ | Nhánh không có `jobID`, gửi email qua SMTP thất bại (`sent === false`) |
@@ -282,7 +293,7 @@ $$\Rightarrow V(G) = R = 9$$
 
 ### 6.2. Kiểm tra độ đo bao phủ điều kiện C3 (Condition Coverage cho Node 1)
 
-Biểu thức điều kiện tại Node 1: `!input.candidateIds || input.candidateIds.length === 0`
+Biểu thức điều kiện tại Node 1 (Dòng 9): `!input.candidateIds || input.candidateIds.length === 0`
 
 | Ca kiểm thử C3 | `!input.candidateIds` ($A$) | `input.candidateIds.length === 0` ($B$) | Kết quả biểu thức ($A \lor B$) | Nhánh rẽ | Dữ liệu đầu vào minh họa |
 | :---: | :---: | :---: | :---: | :---: | :--- |

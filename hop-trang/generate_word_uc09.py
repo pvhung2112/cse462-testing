@@ -92,68 +92,77 @@ def add_code_section(doc):
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
     
     code_text = (
-        "1:  async execute(input: SendBulkEmailInput): Promise<SendBulkEmailResult> {\n"
-        "2:    if (!input.candidateIds || input.candidateIds.length === 0) {\n"
-        "3:      throw new Error('Danh sách ứng viên không được để trống.');\n"
-        "4:    }\n"
-        "5:\n"
-        "6:    if (!input.title?.trim()) {\n"
-        "7:      throw new Error('Tiêu đề email không được để trống.');\n"
-        "8:    }\n"
-        "9:\n"
-        "10:   if (!input.content?.trim()) {\n"
-        "11:     throw new Error('Nội dung email không được để trống.');\n"
-        "12:   }\n"
-        "13:\n"
-        "14:   const failed: Array<{ candidateId: string; candidateName?: string; error: string; }> = [];\n"
-        "15:   let totalSent = 0;\n"
+        "1:  class SendBulkEmailUseCase {\n"
+        "2:    constructor(\n"
+        "3:      private readonly candidateRepo: ICandidateReadRepo,\n"
+        "4:      private readonly jobRepo: IJobReadRepo,\n"
+        "5:      private readonly mailSvc: IMailService,\n"
+        "6:    ) { }\n"
+        "7:\n"
+        "8:    async execute(input: SendBulkEmailInput): Promise<SendBulkEmailResult> {\n"
+        "9:      if (!input.candidateIds || input.candidateIds.length === 0) {\n"
+        "10:       throw new Error('Danh sách ứng viên không được để trống.');\n"
+        "11:     }\n"
+        "12:\n"
+        "13:     if (!input.title?.trim()) {\n"
+        "14:       throw new Error('Tiêu đề email không được để trống.');\n"
+        "15:     }\n"
         "16:\n"
-        "17:   const candidatePromises = input.candidateIds.map(id => this.candidateRepo.getById(id));\n"
-        "18:   const candidates = await Promise.all(candidatePromises);\n"
-        "19:\n"
-        "20:   for (let i = 0; i < candidates.length; i++) {\n"
-        "21:     const candidate = candidates[i];\n"
-        "22:     const candidateId = input.candidateIds[i]!;\n"
+        "17:     if (!input.content?.trim()) {\n"
+        "18:       throw new Error('Nội dung email không được để trống.');\n"
+        "19:     }\n"
+        "20:\n"
+        "21:     const failed: Array<{ candidateId: string; candidateName?: string; error: string; }> = [];\n"
+        "22:     let totalSent = 0;\n"
         "23:\n"
-        "24:     try {\n"
-        "25:       if (!candidate) {\n"
-        "26:         failed.push({ candidateId, error: 'Không tìm thấy ứng viên.' });\n"
-        "27:         continue;\n"
-        "28:       }\n"
-        "29:\n"
-        "30:       const personal = candidate.getPersonal();\n"
-        "31:       if (!personal?.email) {\n"
-        "32:         failed.push({ candidateId, candidateName: personal?.fullName, error: 'Ứng viên không có email.' });\n"
-        "33:         continue;\n"
-        "34:       }\n"
-        "35:\n"
-        "36:       let jobTitle: string | undefined;\n"
-        "37:       const jobID = candidate.getJobID();\n"
-        "38:       if (jobID) {\n"
-        "39:         try {\n"
-        "40:           const job = await this.jobRepo.getById(jobID.toString());\n"
-        "41:           jobTitle = job?.getTitle();\n"
-        "42:         } catch (e) { console.warn(`Could not fetch job for candidate ${candidateId}`); }\n"
-        "43:       }\n"
-        "44:\n"
-        "45:       const personalizedTitle = this.replacePlaceholders(input.title, candidate, jobTitle);\n"
-        "46:       const personalizedContent = this.replacePlaceholders(input.content, candidate, jobTitle);\n"
-        "47:       const htmlContent = `<html><body><div>${personalizedContent}</div></body></html>`;\n"
-        "48:\n"
-        "49:       const sent = await this.mailSvc.sendEmail(personal.email, personalizedTitle, htmlContent);\n"
-        "50:       if (sent) {\n"
-        "51:         totalSent++;\n"
-        "52:       } else {\n"
-        "53:         failed.push({ candidateId, candidateName: personal?.fullName, error: 'Lỗi gửi email từ dịch vụ mail.' });\n"
-        "54:       }\n"
-        "55:     } catch (error: unknown) {\n"
-        "56:       const e = error as { message?: string };\n"
-        "57:       const personal = candidate?.getPersonal();\n"
-        "58:       failed.push({ candidateId, candidateName: personal?.fullName, error: e.message ?? 'Lỗi không xác định.' });\n"
-        "59:     }\n"
-        "60:   }\n"
-        "61:   return { success: true, message: `Gửi email thành công tới ${totalSent}/${input.candidateIds.length} ứng viên.`, totalSent, failed };\n"
-        "62: }"
+        "24:     const candidatePromises = input.candidateIds.map(id => this.candidateRepo.getById(id));\n"
+        "25:     const candidates = await Promise.all(candidatePromises);\n"
+        "26:\n"
+        "27:     for (let i = 0; i < candidates.length; i++) {\n"
+        "28:       const candidate = candidates[i];\n"
+        "29:       const candidateId = input.candidateIds[i]!;\n"
+        "30:\n"
+        "31:       try {\n"
+        "32:         if (!candidate) {\n"
+        "33:           failed.push({ candidateId, error: 'Không tìm thấy ứng viên.' });\n"
+        "34:           continue;\n"
+        "35:         }\n"
+        "36:\n"
+        "37:         const personal = candidate.getPersonal();\n"
+        "38:         if (!personal?.email) {\n"
+        "39:           failed.push({ candidateId, candidateName: personal?.fullName, error: 'Ứng viên không có email.' });\n"
+        "40:           continue;\n"
+        "41:         }\n"
+        "42:\n"
+        "43:         let jobTitle: string | undefined;\n"
+        "44:         const jobID = candidate.getJobID();\n"
+        "45:         if (jobID) {\n"
+        "46:           try {\n"
+        "47:             const job = await this.jobRepo.getById(jobID.toString());\n"
+        "48:             jobTitle = job?.getTitle();\n"
+        "49:           } catch (e) { console.warn(`Could not fetch job for candidate ${candidateId}`); }\n"
+        "50:         }\n"
+        "51:\n"
+        "52:         const personalizedTitle = this.replacePlaceholders(input.title, candidate, jobTitle);\n"
+        "53:         const personalizedContent = this.replacePlaceholders(input.content, candidate, jobTitle);\n"
+        "54:         const htmlContent = `<html><body><div>${personalizedContent}</div></body></html>`;\n"
+        "55:\n"
+        "56:         const sent = await this.mailSvc.sendEmail(personal.email, personalizedTitle, htmlContent);\n"
+        "57:         if (sent) {\n"
+        "58:           totalSent++;\n"
+        "59:         } else {\n"
+        "60:           failed.push({ candidateId, candidateName: personal?.fullName, error: 'Lỗi gửi email từ dịch vụ mail.' });\n"
+        "61:         }\n"
+        "62:       } catch (error: unknown) {\n"
+        "63:         const e = error as { message?: string };\n"
+        "64:         const personal = candidate?.getPersonal();\n"
+        "65:         failed.push({ candidateId, candidateName: personal?.fullName, error: e.message ?? 'Lỗi không xác định.' });\n"
+        "66:       }\n"
+        "67:     }\n"
+        "68:\n"
+        "69:     return { success: true, message: `Gửi email thành công tới ${totalSent}/${input.candidateIds.length} ứng viên.`, totalSent, failed };\n"
+        "70:   }\n"
+        "71: }"
     )
     p = doc.add_paragraph()
     r = p.add_run(code_text)
@@ -167,24 +176,24 @@ def add_blocks_table(doc):
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
 
     blocks = [
-        ("Node 1", "Dòng 1–2", "Tiếp nhận input, kiểm tra if (!input.candidateIds || length === 0)", "Decision (Quyết định 1)"),
-        ("Node 2", "Dòng 3", "throw new Error('Danh sách ứng viên không được để trống.')", "Exit (Ngoại lệ 1)"),
-        ("Node 3", "Dòng 6", "Kiểm tra tiêu đề if (!input.title?.trim())", "Decision (Quyết định 2)"),
-        ("Node 4", "Dòng 7", "throw new Error('Tiêu đề email không được để trống.')", "Exit (Ngoại lệ 2)"),
-        ("Node 5", "Dòng 10", "Kiểm tra nội dung if (!input.content?.trim())", "Decision (Quyết định 3)"),
-        ("Node 6", "Dòng 11", "throw new Error('Nội dung email không được để trống.')", "Exit (Ngoại lệ 3)"),
-        ("Node 7", "Dòng 14–20", "Khởi tạo failed, totalSent, lấy candidates, for (i < candidates.length)", "Loop / Decision 4"),
-        ("Node 8", "Dòng 21–25", "Lấy candidate, bắt đầu try, kiểm tra if (!candidate)", "Decision (Quyết định 5)"),
-        ("Node 9", "Dòng 26–27", "failed.push('Không tìm thấy ứng viên.'), continue (về Node 7)", "Process"),
-        ("Node 10", "Dòng 30–31", "Lấy personal, kiểm tra if (!personal?.email)", "Decision (Quyết định 6)"),
-        ("Node 11", "Dòng 32–33", "failed.push('Ứng viên không có email.'), continue (về Node 7)", "Process"),
-        ("Node 12", "Dòng 36–38", "Lấy jobID, kiểm tra if (jobID)", "Decision (Quyết định 7)"),
-        ("Node 13", "Dòng 39–42", "Khối try-catch lấy thông tin jobRepo.getById(jobID)", "Process"),
-        ("Node 14", "Dòng 45–50", "replacePlaceholders, dựng html, gọi mailSvc.sendEmail, if (sent)", "Decision (Quyết định 8)"),
-        ("Node 15", "Dòng 51", "Tăng biến đếm: totalSent++", "Process"),
-        ("Node 16", "Dòng 53", "failed.push('Lỗi gửi email từ dịch vụ mail.')", "Process"),
-        ("Node 17", "Dòng 55–58", "catch (error) { failed.push(...) } bắt ngoại lệ runtime", "Exception Handler"),
-        ("Node 18", "Dòng 61", "return { success: true, message, totalSent, failed }", "Exit (Thoát bình thường)")
+        ("Node 1", "Dòng 8–9", "Tiếp nhận input, kiểm tra if (!input.candidateIds || length === 0)", "Decision (Quyết định 1)"),
+        ("Node 2", "Dòng 10", "throw new Error('Danh sách ứng viên không được để trống.')", "Exit (Ngoại lệ 1)"),
+        ("Node 3", "Dòng 13", "Kiểm tra tiêu đề email if (!input.title?.trim())", "Decision (Quyết định 2)"),
+        ("Node 4", "Dòng 14", "throw new Error('Tiêu đề email không được để trống.')", "Exit (Ngoại lệ 2)"),
+        ("Node 5", "Dòng 17", "Kiểm tra nội dung email if (!input.content?.trim())", "Decision (Quyết định 3)"),
+        ("Node 6", "Dòng 18", "throw new Error('Nội dung email không được để trống.')", "Exit (Ngoại lệ 3)"),
+        ("Node 7", "Dòng 21–33", "Khởi tạo failed, totalSent, lấy candidates, for (i < candidates.length)", "Loop / Decision 4"),
+        ("Node 8", "Dòng 34–38", "Lấy candidate, bắt đầu try, kiểm tra if (!candidate)", "Decision (Quyết định 5)"),
+        ("Node 9", "Dòng 39–43", "failed.push('Không tìm thấy ứng viên.'), continue (về Node 7)", "Process"),
+        ("Node 10", "Dòng 46–47", "Lấy personal, kiểm tra if (!personal?.email)", "Decision (Quyết định 6)"),
+        ("Node 11", "Dòng 48–53", "failed.push('Ứng viên không có email.'), continue (về Node 7)", "Process"),
+        ("Node 12", "Dòng 56–58", "Lấy jobID, kiểm tra if (jobID)", "Decision (Quyết định 7)"),
+        ("Node 13", "Dòng 59–64", "Khối try-catch lấy thông tin jobRepo.getById(jobID)", "Process"),
+        ("Node 14", "Dòng 67–85", "replacePlaceholders, dựng html, gọi mailSvc.sendEmail, if (sent)", "Decision (Quyết định 8)"),
+        ("Node 15", "Dòng 87–88", "Tăng biến đếm: totalSent++", "Process"),
+        ("Node 16", "Dòng 89–94", "failed.push('Lỗi gửi email từ dịch vụ mail.')", "Process"),
+        ("Node 17", "Dòng 96–103", "catch (error) { failed.push(...) } bắt ngoại lệ runtime", "Exception Handler"),
+        ("Node 18", "Dòng 107–112", "return { success: true, message, totalSent, failed }", "Exit (Thoát bình thường)")
     ]
 
     table = doc.add_table(rows=len(blocks) + 1, cols=4)
