@@ -176,7 +176,7 @@ def add_blocks_table(doc):
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
 
     blocks = [
-        ("Start", "Dòng 8", "Bắt đầu hàm execute(input)", "Điểm vào (Entry Point)"),
+        ("Start", "Dòng 8", "Bắt đầu hàm execute(input: SendBulkEmailInput)", "Điểm vào (Entry Point)"),
         ("Node 1", "Dòng 9", "Điều kiện if (!input.candidateIds || length === 0)", "Decision (Quyết định 1)"),
         ("Node 2", "Dòng 10", "throw new Error('Danh sách ứng viên không được để trống.')", "Exit (Ngoại lệ 1)"),
         ("Node 3", "Dòng 13", "Điều kiện kiểm tra tiêu đề email if (!input.title?.trim())", "Decision (Quyết định 2)"),
@@ -236,14 +236,21 @@ def add_cfg_and_mccabe(doc):
 
     p = doc.add_paragraph()
     r = p.add_run(
-        "Đồ thị dòng điều khiển (CFG) của phương thức execute được xây dựng với 21 đỉnh (Nodes 1-20, phân rã 14a, 14b) và 29 cung (Edges) phản ánh cả nhánh rẽ ngoại lệ:\n\n"
-        "• Phương pháp 1 (Số cung và số đỉnh):\n"
-        "   V(G) = E - N + 2P = 29 - 21 + 2(1) = 10\n\n"
+        "Đồ thị dòng điều khiển (CFG) của phương thức execute được xây dựng với 22 đỉnh (Đỉnh Start tại Dòng 8 + 21 Node nghiệp vụ) và 30 cung (Edges) phản ánh chính xác cả các nhánh rẽ ngoại lệ:\n\n"
+        "• Phương pháp 1 (Dựa trên số cung E và số đỉnh N):\n"
+        "   - Số đỉnh N = 22 (gồm đỉnh Start tại dòng 8 và 21 Node từ Node 1 đến Node 20, phân rã 14a, 14b).\n"
+        "   - Số cung E = 30, gồm 30 cung rẽ nhánh điều kiện, tuần tự, lặp và ngoại lệ:\n"
+        "     (Start->1), (1->2), (1->3), (3->4), (3->5), (5->6), (5->7), (7->8), (8->20), (8->9),\n"
+        "     (9->10), (10->8), (9->11), (11->12), (12->8), (11->13), (13->14a), (13->15),\n"
+        "     (14a->15), (14a->14b), (14b->15), (15->16), (16->17), (16->18), (17->8),\n"
+        "     (18->8), (9->19), (11->19), (15->19), (19->8).\n"
+        "   - Số thành phần liên thông P = 1.\n"
+        "   ==> V(G) = E - N + 2P = 30 - 22 + 2(1) = 10\n\n"
         "• Phương pháp 2 (Số điểm quyết định vị từ Pn):\n"
         "   V(G) = Pn + 1 = 9 (8 điểm if/for + 1 điểm rẽ Try/Catch Job) + 1 = 10\n\n"
         "• Phương pháp 3 (Số miền mặt phẳng khép kín R):\n"
         "   V(G) = R = 9 miền khép kín (R1 đến R9) + 1 miền vô hạn ngoài (R10) = 10\n\n"
-        "==> KẾT LUẬN: Độ phức tạp Cyclomatic V(G) = 10. Cần tối thiểu 10 đường dẫn cơ sở (Basis Paths) để bao phủ toàn bộ đồ thị dòng điều khiển."
+        "==> KẾT LUẬN: Cả 3 phương pháp đều tính ra độ phức tạp Cyclomatic V(G) = 10. Cần tối thiểu 10 đường dẫn cơ sở (Basis Paths) để bao phủ toàn bộ đồ thị dòng điều khiển."
     )
     r.font.size = Pt(10)
     doc.add_paragraph()
@@ -253,15 +260,16 @@ def add_testcases_table(doc):
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
 
     tcs = [
-        ("TC_WB_01", "Path 1 (Start->1->2)", "candidateIds: []", "Ném ngoại lệ: 'Danh sách ứng viên không được để trống.'", "Đạt"),
-        ("TC_WB_02", "Path 2 (Start->1->3->4)", "title: '   '", "Ném ngoại lệ: 'Tiêu đề email không được để trống.'", "Đạt"),
-        ("TC_WB_03", "Path 3 (Start->1->3->5->6)", "content: ''", "Ném ngoại lệ: 'Nội dung email không được để trống.'", "Đạt"),
-        ("TC_WB_04", "Path 5 (Start..->8->9->10->8->20)", "candidateIds: ['CAN_UNKNOWN'] (DB trả null)", "totalSent: 0, failed chứa 'Không tìm thấy ứng viên.'", "Đạt"),
-        ("TC_WB_05", "Path 6 (Start..->8->9->11->12->8->20)", "personal.email = undefined", "totalSent: 0, failed chứa 'Ứng viên không có email.'", "Đạt"),
-        ("TC_WB_06", "Path 7 (Start..->13->15->16->18->8->20)", "jobID: null, mailSvc trả về false", "totalSent: 0, failed chứa 'Lỗi gửi email từ dịch vụ mail.'", "Đạt"),
-        ("TC_WB_07", "Path 8 (Start..->13->14a->15->16->17->8->20)", "Happy Path: jobID hợp lệ, query Job thành công, mailSvc trả true", "totalSent: 1, failed: [], gửi thành công có chức danh Job", "Đạt"),
-        ("TC_WB_08", "Path 9 (Start..->13->14a->14b->15->16->17->8->20)", "jobID hợp lệ nhưng DB lỗi, bắt lỗi tại 14b, mailSvc trả true", "In console.warn, email vẫn gửi thành công không có tên job", "Đạt"),
-        ("TC_WB_09", "Path 10 (Start..->11->19->8->20)", "Candidate object ném Exception đột ngột ngoài", "Khối catch (Node 19) bắt lỗi và ghi nhận vào failed", "Đạt")
+        ("TC_WB_01", "Path 1: Start -> 1 -> 2", "candidateIds: []", "Ném ngoại lệ: 'Danh sách ứng viên không được để trống.'", "Đạt"),
+        ("TC_WB_02", "Path 2: Start -> 1 -> 3 -> 4", "title: '   '", "Ném ngoại lệ: 'Tiêu đề email không được để trống.'", "Đạt"),
+        ("TC_WB_03", "Path 3: Start -> 1 -> 3 -> 5 -> 6", "content: ''", "Ném ngoại lệ: 'Nội dung email không được để trống.'", "Đạt"),
+        ("TC_WB_04", "Path 5: Start..->8->9->10->8->20", "candidateIds: ['CAN_UNKNOWN'] (DB trả null)", "totalSent: 0, failed chứa 'Không tìm thấy ứng viên.'", "Đạt"),
+        ("TC_WB_05", "Path 6: Start..->8->9->11->12->8->20", "personal.email = undefined", "totalSent: 0, failed chứa 'Ứng viên không có email.'", "Đạt"),
+        ("TC_WB_06", "Path 7: Start..->13->15->16->18->8->20", "mailSvc.sendEmail trả về false", "totalSent: 0, failed chứa 'Lỗi gửi email từ dịch vụ mail.'", "Đạt"),
+        ("TC_WB_07", "Path 8: Start..->13->14a->15->16->17->8->20", "Happy Path đầy đủ (jobID hợp lệ, gửi mail OK)", "totalSent: 1, failed: [], message: Gửi thành công 1/1", "Đạt"),
+        ("TC_WB_08", "Path 9: Start..->13->14a->14b->15->16->17->8->20", "jobRepo.getById ném Exception mạng", "Bắt tại 14b, ghi log warn, gửi mail tiếp tục thành công", "Đạt"),
+        ("TC_WB_09", "Path 10: Start..->11->19->8->20", "candidate.getPersonal() ném ngoại lệ", "Bắt tại khối catch ngoài (Node 19), ghi nhận lỗi 'Crash'", "Đạt"),
+        ("TC_WB_10", "Path 4: Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 20", "Danh sách ứng viên rỗng đã qua validate (vòng for 0 lần)", "totalSent: 0, failed: [], trả về đối tượng kết quả rỗng", "Đạt")
     ]
 
     table = doc.add_table(rows=len(tcs) + 1, cols=5)

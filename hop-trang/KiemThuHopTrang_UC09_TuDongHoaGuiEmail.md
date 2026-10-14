@@ -143,11 +143,11 @@ Dưới đây là mã nguồn chuẩn hóa của lớp `SendBulkEmailUseCase` đ
 
 ## 2. BẢNG PHÂN CHIA KHỐI LỆNH CƠ BẢN (BASIC BLOCKS)
 
-Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh thực thi tuần tự, có duy nhất 1 điểm vào và 1 điểm ra), phương thức `execute` được phân tách thành 21 khối lệnh chi tiết và tách bạch tuyệt đối các nhánh ngoại lệ:
+Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh thực thi tuần tự, có duy nhất 1 điểm vào và 1 điểm ra theo chuẩn bài giảng CSE462 - ĐH Thủy Lợi), phương thức `execute` bắt đầu từ dòng 8 và được phân rã thành **22 khối lệnh chi tiết** (gồm đỉnh Start, 20 Node nghiệp vụ, trong đó tách riêng 14a và 14b cho khối try-catch):
 
 | Khối (Node) | Dòng mã nguồn | Nội dung thực thi chi tiết | Loại đỉnh (Node Type) |
 | :---------: | :------------ | :------------------------- | :-------------------- |
-| **Start**   | Dòng 8        | Bắt đầu hàm `execute(input)` | Điểm vào (Entry Point) |
+| **Start**   | Dòng 8        | Bắt đầu hàm `execute(input: SendBulkEmailInput)` | Điểm vào (Entry Point) |
 | **Node 1**  | Dòng 9        | Điều kiện `if (!input.candidateIds \|\| input.candidateIds.length === 0)` | Decision (Điểm quyết định 1) |
 | **Node 2**  | Dòng 10       | `throw new Error('Danh sách ứng viên không được để trống.')` | Exit (Ngoại lệ 1) |
 | **Node 3**  | Dòng 13       | Điều kiện kiểm tra tiêu đề email `if (!input.title?.trim())` | Decision (Điểm quyết định 2) |
@@ -168,7 +168,7 @@ Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh 
 | **Node 17** | Dòng 88       | Thân True của if 8: tăng biến đếm `totalSent++` | Process (Xử lý thành công) |
 | **Node 18** | Dòng 89–94    | Thân False (else) của if 8: `failed.push('Lỗi gửi email từ dịch vụ mail.')` | Process (Xử lý thất bại) |
 | **Node 19** | Dòng 96–103   | Khối bắt ngoại lệ ngoài: `catch (error) { failed.push(...) }` | Exception Handler (Xử lý ngoại lệ runtime) |
-| **Node 20** | Dòng 107–112  | Hết vòng lặp `for`: tạo kết quả và trả về `return { success: true, ... }` | Exit (Thoát bình thường) |
+| **Node 20** | Dòng 107–112  | Hết vòng lặp `for`: tạo kết quả và trả về `return { success: true, ... }` | Exit (Thoát thành công) |
 
 ---
 
@@ -176,11 +176,11 @@ Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh 
 
 ### 3.1. Đồ thị dòng điều khiển ứng với độ đo C1 và C2 (Statement & Decision Coverage)
 
-Đồ thị dưới đây mô tả chính xác luồng điều khiển bao gồm cả nhánh rẽ ngoại lệ của khối `try-catch` khi truy vấn công việc (Node 14a & 14b):
+Đồ thị dưới đây mô tả chính xác luồng điều khiển bao gồm điểm vào Start (Dòng 8), các nhánh rẽ điều kiện tuần tự, vòng lặp và nhánh rẽ ngoại lệ của khối `try-catch`:
 
 ```mermaid
 flowchart TD
-    Start(["Start: execute(input)"]) --> N1{"Node 1: !candidateIds || length == 0?"}
+    Start(["Start: Dòng 8 - execute(input)"]) --> N1{"Node 1: !candidateIds || len == 0?"}
     
     N1 -- "True" --> N2["Node 2: throw 'Danh sách trống'"]
     N1 -- "False" --> N3{"Node 3: !title?.trim()?"}
@@ -229,16 +229,46 @@ flowchart TD
 
 ## 4. TÍNH ĐỘ PHỨC TẠP CYCLOMATIC (MCCABE)
 
-Độ phức tạp Cyclomatic $V(G)$ được tính toán độc lập theo 3 phương pháp chuẩn của Thomas McCabe:
+Độ phức tạp Cyclomatic $V(G)$ được tính toán độc lập theo 3 phương pháp chuẩn của Thomas McCabe (chuẩn bài thi môn CSE462):
 
 ### 1. Phương pháp 1: Dựa trên số cung ($E$) và số đỉnh ($N$)
 $$V(G) = E - N + 2P$$
 Trong đó:
-- Số đỉnh (Nodes) $N = 21$ (gồm Node 1 đến Node 20, trong đó Node 14 được phân rã thành Node 14a và Node 14b).
-- Số cung (Edges) $E = 29$ (gồm các nhánh rẽ True/False, cung tuần tự và các nhánh ngoại lệ Exception).
-- Số thành phần liên thông $P = 1$.
+- **Số đỉnh (Nodes) $N = 22$**, bao gồm: Đỉnh Start (Dòng 8) + 21 Node (từ Node 1 đến Node 20, trong đó Node 14 gồm Node 14a và Node 14b).
+- **Số cung (Edges) $E = 30$**, được liệt kê tường minh gồm:
+  1. $(Start \rightarrow 1)$ [Bắt đầu hàm chuyển sang câu lệnh kiểm tra đầu tiên]
+  2. $(1 \rightarrow 2)$ [Nhánh True của Node 1: ném lỗi danh sách rỗng]
+  3. $(1 \rightarrow 3)$ [Nhánh False của Node 1: kiểm tra tiêu đề]
+  4. $(3 \rightarrow 4)$ [Nhánh True của Node 3: ném lỗi tiêu đề rỗng]
+  5. $(3 \rightarrow 5)$ [Nhánh False của Node 3: kiểm tra nội dung]
+  6. $(5 \rightarrow 6)$ [Nhánh True của Node 5: ném lỗi nội dung rỗng]
+  7. $(5 \rightarrow 7)$ [Nhánh False của Node 5: khởi tạo dữ liệu chuẩn bị]
+  8. $(7 \rightarrow 8)$ [Chuyển vào vòng lặp for]
+  9. $(8 \rightarrow 20)$ [Nhánh False của vòng lặp: hết danh sách ứng viên, thoát vòng lặp]
+  10. $(8 \rightarrow 9)$ [Nhánh True của vòng lặp: duyệt ứng viên thứ $i$]
+  11. $(9 \rightarrow 10)$ [Nhánh True của Node 9: không tìm thấy ứng viên, ghi lỗi]
+  12. $(10 \rightarrow 8)$ [Lệnh continue quay lại đầu vòng lặp Node 8]
+  13. $(9 \rightarrow 11)$ [Nhánh False của Node 9: ứng viên tồn tại, kiểm tra email]
+  14. $(11 \rightarrow 12)$ [Nhánh True của Node 11: không có email, ghi lỗi]
+  15. $(12 \rightarrow 8)$ [Lệnh continue quay lại đầu vòng lặp Node 8]
+  16. $(11 \rightarrow 13)$ [Nhánh False của Node 11: có email, kiểm tra jobID]
+  17. $(13 \rightarrow 14a)$ [Nhánh True của Node 13: có jobID, vào khối try truy vấn Job]
+  18. $(13 \rightarrow 15)$ [Nhánh False của Node 13: không có jobID, bỏ qua bước lấy Job sang tạo thư]
+  19. $(14a \rightarrow 15)$ [Truy vấn Job thành công trong khối try, chuyển tiếp sang tạo thư]
+  20. $(14a \rightarrow 14b)$ [Truy vấn Job gặp lỗi, rẽ nhánh ném ngoại lệ sang khối catch]
+  21. $(14b \rightarrow 15)$ [Xử lý log cảnh báo trong catch xong, tiếp tục luồng tạo thư]
+  22. $(15 \rightarrow 16)$ [Thực thi gửi thư xong, chuyển sang kiểm tra kết quả `sent`]
+  23. $(16 \rightarrow 17)$ [Nhánh True của Node 16: gửi thành công, tăng biến đếm `totalSent++`]
+  24. $(16 \rightarrow 18)$ [Nhánh False của Node 16: gửi thất bại, ghi lỗi vào mảng failed]
+  25. $(17 \rightarrow 8)$ [Hoàn thành xử lý ứng viên thành công, quay lại đầu vòng lặp Node 8]
+  26. $(18 \rightarrow 8)$ [Hoàn thành xử lý ứng viên thất bại, quay lại đầu vòng lặp Node 8]
+  27. $(9 \rightarrow 19)$ [Ngoại lệ bất ngờ tại Node 9 ném ra khối catch ngoài]
+  28. $(11 \rightarrow 19)$ [Ngoại lệ bất ngờ tại Node 11 ném ra khối catch ngoài]
+  29. $(15 \rightarrow 19)$ [Ngoại lệ bất ngờ tại Node 15 ném ra khối catch ngoài]
+  30. $(19 \rightarrow 8)$ [Khối catch ngoài ghi nhận lỗi xong, quay lại đầu vòng lặp Node 8]
+- **Số thành phần liên thông $P = 1$** (Chương trình đơn, đồ thị liên thông duy nhất).
 
-$$\Rightarrow V(G) = 29 - 21 + 2(1) = 10$$
+$$\Rightarrow V(G) = 30 - 22 + 2(1) = 10$$
 
 ### 2. Phương pháp 2: Dựa trên số điểm quyết định vị từ ($P_n$)
 $$V(G) = P_n + 1$$
@@ -260,7 +290,7 @@ $$V(G) = R$$
 Đồ thị phẳng có 9 miền kín bao bọc bởi các chu trình rẽ nhánh và vòng lặp ($R_1 \dots R_9$) cộng thêm 1 miền vô hạn bao quanh bên ngoài ($R_{10}$):
 $$\Rightarrow V(G) = R = 10$$
 
-> **Kết luận:** Độ phức tạp Cyclomatic của phương thức `execute` là **$V(G) = 10$**. Cần tối thiểu **10 đường dẫn cơ sở (Basis Paths)** độc lập tuyến tính để bao phủ toàn bộ đồ thị dòng điều khiển.
+> **Kết luận:** Cả 3 phương pháp đều tính ra độ phức tạp Cyclomatic của phương thức `execute` là **$V(G) = 10$**. Do đó, cần tối thiểu **10 đường dẫn cơ sở (Basis Paths)** độc lập tuyến tính để bao phủ toàn bộ đồ thị dòng điều khiển.
 
 ---
 
@@ -296,6 +326,7 @@ $$\Rightarrow V(G) = R = 10$$
 | **TC_WB_07** | Path 8: $Start \dots \rightarrow 13 \rightarrow 14a \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C04']`, `title: "Tuyển dụng [Vị Trí]"`, `content: "Chào [Tên Ứng Viên]"` | Candidate hợp lệ, `jobID = 'JOB_01'`, `jobRepo.getById` trả về Job, `mailSvc.sendEmail` trả về `true` | Trả về `totalSent: 1`, `failed: []`, `message: 'Gửi email thành công tới 1/1 ứng viên.'` (Happy Path) | Đạt |
 | **TC_WB_08** | Path 9: $Start \dots \rightarrow 13 \rightarrow 14a \rightarrow 14b \rightarrow 15 \rightarrow 16 \rightarrow 17 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C05']`, `title: "Tuyển dụng [Vị Trí]"`, `content: "Chào bạn"` | Candidate hợp lệ, `jobID = 'JOB_ERR'`, `jobRepo.getById` ném Exception mạng $\rightarrow$ bắt tại Node 14b | In `console.warn`, email vẫn gửi thành công không có tên job, `totalSent: 1` | Đạt |
 | **TC_WB_09** | Path 10: $Start \dots \rightarrow 11 \rightarrow 19 \rightarrow 8 \rightarrow 20$ | `candidateIds: ['C06']`, `title: "Hẹn PV"`, `content: "Chào bạn"` | `candidate.getPersonal()` ném ngoại lệ đột ngột: `Error('Crash')` | Khối `catch` (Node 19) bắt lỗi, thêm vào mảng `failed` với thông điệp: `'Crash'` | Đạt |
+| **TC_WB_10** | Path 4: $Start \rightarrow 1 \rightarrow 3 \rightarrow 5 \rightarrow 7 \rightarrow 8 \rightarrow 20$ | `candidateIds: []` (sau validate bypass), `title: "Thư mời"`, `content: "Nội dung"` | Danh sách ứng viên rỗng đã qua bước validate | Trả về `totalSent: 0`, `failed: []`, thoát ngay sau vòng for | Đạt |
 
 ---
 
