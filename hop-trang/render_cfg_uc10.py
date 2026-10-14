@@ -65,7 +65,7 @@ def create_cfg_c1_c2(output_path):
     cx = 38
 
     # Start
-    draw_box(cx, 196, 26, 4.5, "Start: Dòng 36\nexecute(input)", c_blue_face, c_blue_edge, shape='round')
+    draw_box(cx, 196, 26, 4.5, "Start: Dòng 11\nexecute(input)", c_blue_face, c_blue_edge, shape='round')
 
     # Node 1 & 2
     draw_box(cx, 183, 28, 7.5, "Node 1:\n!candidateID || !jobID?", c_yellow_face, c_yellow_edge, shape='diamond', fontsize=7.5)
@@ -225,7 +225,7 @@ def create_cfg_c3(output_path):
     cx = 38
 
     # Start
-    draw_box(cx, 206, 26, 4.5, "Start: Dòng 36\nexecute(input)", c_blue_face, c_blue_edge, shape='round')
+    draw_box(cx, 206, 26, 4.5, "Start: Dòng 11\nexecute(input)", c_blue_face, c_blue_edge, shape='round')
 
     # Node 1a & Node 1b (C3 Split)
     draw_box(cx, 194, 28, 7.5, "Node 1a:\n!candidateID?", c_yellow_face, c_yellow_edge, shape='diamond')

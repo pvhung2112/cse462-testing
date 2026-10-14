@@ -9,7 +9,7 @@
 - **Đề tài:** Hệ thống Quản lý Tuyển dụng – Trợ lý Tuyển dụng & Sàng lọc Hồ sơ Tự động
 - **Giảng viên hướng dẫn:** TS. Nguyễn Thị Phương Dung | **Nhóm:** 09
 - **Sinh viên thực hiện:** Phạm Văn Hưng (Mã SV: **2351170598**)
-- **Mã Use Case:** `UC_10` | **Tên Use Case:** Lên lịch phỏng vấn ứng viên *(Candidate Interview Scheduling & Google Calendar Integration)*
+- **Mã Use Case:** `UC_10` | **Tên Use Case:** Lên lịch phỏng vấn ứng viên *(Candidate Interview Scheduling & Calendar Integration)*
 - **Đối tượng kiểm thử (Target Under Test):** Lớp `ScheduleInterviewUseCase` (Phương thức `execute`)
 - **Tệp mã nguồn:** `src/modules/client/application/use-cases/interview/schedule-interview.use-case.ts`
 - **Tài liệu lý thuyết tham chiếu:** Giáo trình & Bài giảng *CSE462 - Các kỹ thuật kiểm thử phần mềm*, Trường Đại học Thủy Lợi; Chuẩn quốc tế ISTQB CTFL 2018 v3.1.
@@ -18,162 +18,137 @@
 
 ## 1. MÃ NGUỒN ĐÁNH SỐ DÒNG
 
-Dưới đây là mã nguồn chuẩn hóa của lớp `ScheduleInterviewUseCase` được đánh số thứ tự dòng thực thi:
+Dưới đây là mã nguồn chuẩn hóa của lớp `ScheduleInterviewUseCase` được lấy và đánh số thứ tự dòng thực thi bắt đầu từ dòng 1:
 
 ```typescript
-1:  import type { IAnalysisReadRepo } from '../../../application/ports/repositories/analysis.interface';
-2:  import type { ICandidateReadRepo, ICandidateWriteRepo } from '../../../application/ports/repositories/candidate.interface';
-3:  import type { IInterviewScheduleRepository } from '../../../application/ports/repositories/interviewSchedule.interface';
-4:  import type { IJobReadRepo } from '../../../application/ports/repositories/job.interface';
-5:  import type { IInterviewScheduleDetail } from '../../../domain/interviewSchedule';
-6:  import type { IAIService } from '../../../application/ports/services/ai.service';
-7:  import type { IMailService } from '../../../application/ports/services/mail.service';
-8:  import { buildInterviewCalendarInvite } from '../../../infrastructure/external-service/calendarInvite.service';
-9:  import { CandidateStatus } from '../../../domain/candidate';
+1:  export class ScheduleInterviewUseCase {
+2:    constructor(
+3:      private readonly candidateRepo: ICandidateReadRepo & ICandidateWriteRepo,
+4:      private readonly jobRepo: IJobReadRepo,
+5:      private readonly aiAnalysisRepo: IAnalysisReadRepo,
+6:      private readonly interviewScheduleRepo: IInterviewScheduleRepository,
+7:      private readonly geminiSvc: IAIService,
+8:      private readonly mailSvc: IMailService,
+9:    ) { }
 10: 
-11: export type ScheduleInterviewInput = {
-12:   userId: string;
-13:   candidateID: string;
-14:   jobID: string;
-15:   time: Date;
-16:   durationMinutes: number;
-17:   address: string;
-18:   notes?: string;
-19: };
-20: 
-21: export type ScheduleInterviewResult = {
-22:   schedule: IInterviewScheduleDetail;
-23:   emailSent: boolean;
-24: };
+11:   async execute(input: ScheduleInterviewInput): Promise<ScheduleInterviewResult> {
+12:     if (!input.candidateID || !input.jobID) {
+13:       throw new Error('Mã ứng viên và mã công việc không được để trống.');
+14:     }
+15: 
+16:     const candidate = await this.candidateRepo.getById(input.candidateID);
+17:     if (!candidate) throw new Error('Không tìm thấy thông tin ứng viên.');
+18:     if (!candidate.getPersonal().email) throw new Error('Ứng viên chưa có email để gửi thư mời.');
+19: 
+20:     const job = await this.jobRepo.getById(input.jobID);
+21:     if (!job) throw new Error('Không tìm thấy thông tin công việc (Job).');
+22: 
+23:     const analysis = await this.aiAnalysisRepo.getAnalysisByCandidateId(input.candidateID);
+24:     if (!analysis) throw new Error('Ứng viên chưa được AI phân tích. Vui lòng chạy phân tích trước khi đặt lịch.');
 25: 
-26: export class ScheduleInterviewUseCase {
-27:   constructor(
-28:     private readonly candidateRepo: ICandidateReadRepo & ICandidateWriteRepo,
-29:     private readonly jobRepo: IJobReadRepo,
-30:     private readonly aiAnalysisRepo: IAnalysisReadRepo,
-31:     private readonly interviewScheduleRepo: IInterviewScheduleRepository,
-32:     private readonly geminiSvc: IAIService,
-33:     private readonly mailSvc: IMailService,
-34:   ) { }
-35: 
-36:   async execute(input: ScheduleInterviewInput): Promise<ScheduleInterviewResult> {
-37:     if (!input.candidateID || !input.jobID) {
-38:       throw new Error('Mã ứng viên và mã công việc không được để trống.');
-39:     }
-40: 
-41:     const candidate = await this.candidateRepo.getById(input.candidateID);
-42:     if (!candidate) throw new Error('Không tìm thấy thông tin ứng viên.');
-43:     if (!candidate.getPersonal().email) throw new Error('Ứng viên chưa có email để gửi thư mời.');
-44: 
-45:     const job = await this.jobRepo.getById(input.jobID);
-46:     if (!job) throw new Error('Không tìm thấy thông tin công việc (Job).');
-47: 
-48:     const analysis = await this.aiAnalysisRepo.getAnalysisByCandidateId(input.candidateID);
-49:     if (!analysis) throw new Error('Ứng viên chưa được AI phân tích. Vui lòng chạy phân tích trước khi đặt lịch.');
-50: 
-51:     const isOverlap = await this.interviewScheduleRepo.checkOverlap(input.userId, input.time, input.durationMinutes);
-52:     if (isOverlap) {
-53:       throw new Error('Khung giờ này đã có lịch khác. Vui lòng chọn giờ lại');
-54:     }
-55: 
-56:     const created = await this.interviewScheduleRepo.createSchedule({
-57:       time: input.time,
-58:       address: input.address,
-59:       candidateId: input.candidateID,
-60:       userId: input.userId,
-61:       status: 'scheduled',
-62:     });
-63:     if (!created) throw new Error('Không thể tạo lịch phỏng vấn.');
-64: 
-65:     const invite = buildInterviewCalendarInvite({
-66:       uid: `${created.getId()}@hr-agent`,
-67:       startTime: input.time,
-68:       durationMinutes: input.durationMinutes,
-69:       summary: `Phỏng vấn - ${job.getTitle()}`,
-70:       description: [
-71:         `Phỏng vấn vị trí: ${job.getTitle()}`,
-72:         `Ghi chú: ${input.notes ?? ''}`,
-73:       ].filter(Boolean).join('\n'),
-74:       location: input.address,
-75:       organizerEmail: process.env.MAIL_USER,
-76:       attendeeEmail: candidate.getPersonal().email,
-77:     });
-78: 
-79:     const emailPayload = {
-80:       candidate: {
-81:         fullName: candidate.getPersonal().fullName,
-82:         email: candidate.getPersonal().email,
-83:       },
-84:       job: job.getDetailJob(),
-85:       schedule: {
-86:         time: input.time.toISOString(),
-87:         durationMinutes: input.durationMinutes,
-88:         address: input.address,
+26:     const isOverlap = await this.interviewScheduleRepo.checkOverlap(input.userId, input.time, input.durationMinutes);
+27:     if (isOverlap) {
+28:       throw new Error('Khung giờ này đã có lịch khác. Vui lòng chọn giờ lại');
+29:     }
+30: 
+31:     const created = await this.interviewScheduleRepo.createSchedule({
+32:       time: input.time,
+33:       address: input.address,
+34:       candidateId: input.candidateID,
+35:       userId: input.userId,
+36:       status: 'scheduled',
+37:     });
+38:     if (!created) throw new Error('Không thể tạo lịch phỏng vấn.');
+39: 
+40:     const invite = buildInterviewCalendarInvite({
+41:       uid: `${created.getId()}@hr-agent`,
+42:       startTime: input.time,
+43:       durationMinutes: input.durationMinutes,
+44:       summary: `Phỏng vấn - ${job.getTitle()}`,
+45:       description: [
+46:         `Phỏng vấn vị trí: ${job.getTitle()}`,
+47:         `Ghi chú: ${input.notes ?? ''}`,
+48:       ].filter(Boolean).join('\n'),
+49:       location: input.address,
+50:       organizerEmail: process.env.MAIL_USER,
+51:       attendeeEmail: candidate.getPersonal().email,
+52:     });
+53: 
+54:     const emailPayload = {
+55:       candidate: {
+56:         fullName: candidate.getPersonal().fullName,
+57:         email: candidate.getPersonal().email,
+58:       },
+59:       job: job.getDetailJob(),
+60:       schedule: {
+61:         time: input.time.toISOString(),
+62:         durationMinutes: input.durationMinutes,
+63:         address: input.address,
+64:       },
+65:       aiAnalysis: analysis,
+66:       notes: input.notes ?? '',
+67:     };
+68: 
+69:     let subject = `Thư mời phỏng vấn - ${job.getTitle()}`;
+70:     let html = `<p>Xin chào ${candidate.getPersonal().fullName || 'bạn'},</p><p>Chúng tôi xin mời bạn tham gia phỏng vấn cho vị trí <b>${job.getTitle()}</b>.</p>`;
+71: 
+72:     try {
+73:       const generated = await this.geminiSvc.generateInterviewEmail(emailPayload);
+74:       if (generated?.subject?.trim()) {
+75:         subject = generated.subject.trim();
+76:       }
+77:       if (generated?.html) {
+78:         html = generated.html;
+79:       }
+80:     } catch (e) {
+81:       console.warn('Không thể tạo email bằng AI, sử dụng mẫu mặc định.');
+82:     }
+83: 
+84:     const emailSent = await this.mailSvc.sendEmail(candidate.getPersonal().email, subject, html, [
+85:       {
+86:         filename: invite.filename,
+87:         content: invite.content,
+88:         contentType: invite.contentType,
 89:       },
-90:       aiAnalysis: analysis,
-91:       notes: input.notes ?? '',
-92:     };
+90:     ]);
+91: 
+92:     await this.candidateRepo.updateStatus(input.candidateID, { status: CandidateStatus.INTERVIEW });
 93: 
-94:     let subject = `Thư mời phỏng vấn - ${job.getTitle()}`;
-95:     let html = `<p>Xin chào ${candidate.getPersonal().fullName || 'bạn'},</p><p>Chúng tôi xin mời bạn tham gia phỏng vấn cho vị trí <b>${job.getTitle()}</b>.</p>`;
-96: 
-97:     try {
-98:       const generated = await this.geminiSvc.generateInterviewEmail(emailPayload);
-99:       if (generated?.subject?.trim()) {
-100:        subject = generated.subject.trim();
-101:      }
-102:      if (generated?.html) {
-103:        html = generated.html;
-104:      }
-105:    } catch (e) {
-106:      console.warn('Không thể tạo email bằng AI, sử dụng mẫu mặc định.');
-107:    }
-108: 
-109:    const emailSent = await this.mailSvc.sendEmail(candidate.getPersonal().email, subject, html, [
-110:      {
-111:        filename: invite.filename,
-112:        content: invite.content,
-113:        contentType: invite.contentType,
-114:      },
-115:    ]);
-116: 
-117:    await this.candidateRepo.updateStatus(input.candidateID, { status: CandidateStatus.INTERVIEW });
-118: 
-119:    return { schedule: created.getDetail(), emailSent };
-120:  }
-121:}
+94:     return { schedule: created.getDetail(), emailSent };
+95:   }
+96: }
 ```
 
-*(Ghi chú: Dòng 1–34 là khai báo kiểu dữ liệu, Class và Constructor Dependency Injection. Phương thức nghiệp vụ cần kiểm thử `execute` bắt đầu từ dòng 36).*
+*(Ghi chú: Dòng 1–9 là khai báo Class và Constructor Dependency Injection. Phương thức nghiệp vụ `execute` bắt đầu từ dòng 11).*
 
 ---
 
 ## 2. BẢNG PHÂN CHIA KHỐI LỆNH CƠ BẢN (BASIC BLOCKS)
 
-Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh thực thi tuần tự, có duy nhất 1 điểm vào và 1 điểm ra theo chuẩn bài giảng CSE462 - ĐH Thủy Lợi), phương thức `execute` bắt đầu từ dòng 36 và được phân rã thành **20 khối lệnh chi tiết** (gồm đỉnh Start, 18 Node nghiệp vụ, trong đó tách riêng 16a và 16b cho khối try-catch gọi AI):
+Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh thực thi tuần tự, có duy nhất 1 điểm vào và 1 điểm ra theo chuẩn bài giảng CSE462 - ĐH Thủy Lợi), phương thức `execute` bắt đầu từ dòng 11 và được phân rã thành **20 khối lệnh chi tiết** (gồm đỉnh Start, 18 Node nghiệp vụ, trong đó tách riêng 16a và 16b cho khối try-catch gọi AI):
 
 | Khối (Node) | Dòng mã nguồn | Nội dung thực thi chi tiết | Loại đỉnh (Node Type) |
 | :---------: | :------------ | :------------------------- | :-------------------- |
-| **Start**   | Dòng 36       | Bắt đầu hàm `execute(input: ScheduleInterviewInput)` | Điểm vào (Entry Point) |
-| **Node 1**  | Dòng 37–38    | Tiếp nhận tham số, kiểm tra `if (!input.candidateID \|\| !input.jobID)` | Điểm quyết định (Decision) |
-| **Node 2**  | Dòng 38       | `throw new Error('Mã ứng viên và mã công việc không được để trống.');` | Điểm thoát ngoại lệ (Exit Exception 1) |
-| **Node 3**  | Dòng 41–42    | `candidate = await candidateRepo.getById(candidateID)`, kiểm tra `if (!candidate)` | Điểm quyết định (Decision) |
-| **Node 4**  | Dòng 42       | `throw new Error('Không tìm thấy thông tin ứng viên.');` | Điểm thoát ngoại lệ (Exit Exception 2) |
-| **Node 5**  | Dòng 43       | Kiểm tra `if (!candidate.getPersonal().email)` | Điểm quyết định (Decision) |
-| **Node 6**  | Dòng 43       | `throw new Error('Ứng viên chưa có email để gửi thư mời.');` | Điểm thoát ngoại lệ (Exit Exception 3) |
-| **Node 7**  | Dòng 45–46    | `job = await jobRepo.getById(input.jobID)`, kiểm tra `if (!job)` | Điểm quyết định (Decision) |
-| **Node 8**  | Dòng 46       | `throw new Error('Không tìm thấy thông tin công việc (Job).');` | Điểm thoát ngoại lệ (Exit Exception 4) |
-| **Node 9**  | Dòng 48–49    | `analysis = await aiAnalysisRepo.getAnalysisByCandidateId(...)`, kiểm tra `if (!analysis)` | Điểm quyết định (Decision) |
-| **Node 10** | Dòng 49       | `throw new Error('Ứng viên chưa được AI phân tích. Vui lòng chạy phân tích trước khi đặt lịch.');` | Điểm thoát ngoại lệ (Exit Exception 5) |
-| **Node 11** | Dòng 51–53    | `isOverlap = await interviewScheduleRepo.checkOverlap(...)`, kiểm tra `if (isOverlap)` | Điểm quyết định (Decision) |
-| **Node 12** | Dòng 53       | `throw new Error('Khung giờ này đã có lịch khác. Vui lòng chọn giờ lại');` | Điểm thoát ngoại lệ (Exit Exception 6) |
-| **Node 13** | Dòng 56–63    | `created = await interviewScheduleRepo.createSchedule(...)`, kiểm tra `if (!created)` | Điểm quyết định (Decision) |
-| **Node 14** | Dòng 63       | `throw new Error('Không thể tạo lịch phỏng vấn.');` | Điểm thoát ngoại lệ (Exit Exception 7) |
-| **Node 15** | Dòng 65–95    | Tạo `invite = buildInterviewCalendarInvite()`, tạo `emailPayload`, gán mẫu thư mặc định `subject`, `html` | Khối xử lý (Process) |
-| **Node 16a**| Dòng 97–104   | Khối Try: gọi AI `geminiSvc.generateInterviewEmail(emailPayload)`, cập nhật `subject`, `html` nếu có | Khối xử lý (Process) |
-| **Node 16b**| Dòng 105–107  | Khối Catch: bắt lỗi AI, ghi `console.warn()`, giữ nguyên mẫu email mặc định | Xử lý ngoại lệ (Exception Handle) |
-| **Node 17** | Dòng 109–117  | Gửi thư mời qua SMTP: `mailSvc.sendEmail()`, cập nhật trạng thái `candidateRepo.updateStatus('INTERVIEW')` | Khối xử lý (Process) |
-| **Node 18** | Dòng 119      | `return { schedule: created.getDetail(), emailSent };` | Điểm thoát thành công (Exit Success) |
+| **Start**   | Dòng 11       | Bắt đầu hàm `execute(input: ScheduleInterviewInput)` | Điểm vào (Entry Point) |
+| **Node 1**  | Dòng 12–14    | Tiếp nhận tham số, kiểm tra `if (!input.candidateID \|\| !input.jobID)` | Điểm quyết định (Decision) |
+| **Node 2**  | Dòng 13       | `throw new Error('Mã ứng viên và mã công việc không được để trống.');` | Điểm thoát (Exit Exception 1) |
+| **Node 3**  | Dòng 16–17    | `candidate = await candidateRepo.getById(candidateID)`, kiểm tra `if (!candidate)` | Điểm quyết định (Decision) |
+| **Node 4**  | Dòng 17       | `throw new Error('Không tìm thấy thông tin ứng viên.');` | Điểm thoát (Exit Exception 2) |
+| **Node 5**  | Dòng 18       | Kiểm tra `if (!candidate.getPersonal().email)` | Điểm quyết định (Decision) |
+| **Node 6**  | Dòng 18       | `throw new Error('Ứng viên chưa có email để gửi thư mời.');` | Điểm thoát (Exit Exception 3) |
+| **Node 7**  | Dòng 20–21    | `job = await jobRepo.getById(input.jobID)`, kiểm tra `if (!job)` | Điểm quyết định (Decision) |
+| **Node 8**  | Dòng 21       | `throw new Error('Không tìm thấy thông tin công việc (Job).');` | Điểm thoát (Exit Exception 4) |
+| **Node 9**  | Dòng 23–24    | `analysis = await aiAnalysisRepo.getAnalysisByCandidateId(...)`, kiểm tra `if (!analysis)` | Điểm quyết định (Decision) |
+| **Node 10** | Dòng 24       | `throw new Error('Ứng viên chưa được AI phân tích. Vui lòng chạy phân tích trước khi đặt lịch.');` | Điểm thoát (Exit Exception 5) |
+| **Node 11** | Dòng 26–29    | `isOverlap = await interviewScheduleRepo.checkOverlap(...)`, kiểm tra `if (isOverlap)` | Điểm quyết định (Decision) |
+| **Node 12** | Dòng 28       | `throw new Error('Khung giờ này đã có lịch khác. Vui lòng chọn giờ lại');` | Điểm thoát (Exit Exception 6) |
+| **Node 13** | Dòng 31–38    | `created = await interviewScheduleRepo.createSchedule(...)`, kiểm tra `if (!created)` | Điểm quyết định (Decision) |
+| **Node 14** | Dòng 38       | `throw new Error('Không thể tạo lịch phỏng vấn.');` | Điểm thoát (Exit Exception 7) |
+| **Node 15** | Dòng 40–70    | Tạo `invite = buildInterviewCalendarInvite()`, chuẩn bị `emailPayload`, gán mẫu mặc định `subject`, `html` | Khối xử lý (Process) |
+| **Node 16a**| Dòng 72–79    | Khối Try: gọi AI `geminiSvc.generateInterviewEmail(emailPayload)`, cập nhật `subject`, `html` | Khối xử lý (Process) |
+| **Node 16b**| Dòng 80–82    | Khối Catch: bắt lỗi AI, ghi `console.warn()`, giữ nguyên template email mặc định | Xử lý ngoại lệ (Exception Handle) |
+| **Node 17** | Dòng 84–92    | Gửi thư mời qua SMTP: `mailSvc.sendEmail()`, cập nhật trạng thái `candidateRepo.updateStatus('INTERVIEW')` | Khối xử lý (Process) |
+| **Node 18** | Dòng 94       | `return { schedule: created.getDetail(), emailSent };` | Điểm thoát thành công (Exit Success) |
 
 ---
 
@@ -193,7 +168,7 @@ flowchart TD
     classDef process fill:#E1D5E7,stroke:#9673A6,stroke-width:2px,color:#432874,font-weight:bold;
     classDef exception fill:#F8CECC,stroke:#B85450,stroke-width:2px,color:#7A1E1E,font-weight:bold;
 
-    Start(["Start: Dòng 36 - execute(input)"]):::startEnd --> N1{"Node 1: !candidateID || !jobID?"}:::decision
+    Start(["Start: Dòng 11 - execute(input)"]):::startEnd --> N1{"Node 1: !candidateID || !jobID?"}:::decision
     
     N1 -- "True" --> N2["Node 2: throw 'Mã trống'"]:::exception
     N1 -- "False" --> N3{"Node 3: !candidate?"}:::decision
@@ -242,7 +217,7 @@ flowchart TD
     classDef process fill:#E1D5E7,stroke:#9673A6,stroke-width:2px,color:#432874,font-weight:bold;
     classDef exception fill:#F8CECC,stroke:#B85450,stroke-width:2px,color:#7A1E1E,font-weight:bold;
 
-    Start(["Start: Dòng 36 - execute(input)"]):::startEnd --> N1a{"Node 1a: !candidateID?"}:::decision
+    Start(["Start: Dòng 11 - execute(input)"]):::startEnd --> N1a{"Node 1a: !candidateID?"}:::decision
     
     N1a -- "True (Ngắt mạch)" --> N2["Node 2: throw 'Mã trống'"]:::exception
     N1a -- "False" --> N1b{"Node 1b: !jobID?"}:::decision

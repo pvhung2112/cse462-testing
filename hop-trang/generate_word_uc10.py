@@ -93,102 +93,102 @@ def add_code_section(doc):
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
     
     code_text = (
-        "26: export class ScheduleInterviewUseCase {\n"
-        "27:   constructor(\n"
-        "28:     private readonly candidateRepo: ICandidateReadRepo & ICandidateWriteRepo,\n"
-        "29:     private readonly jobRepo: IJobReadRepo,\n"
-        "30:     private readonly aiAnalysisRepo: IAnalysisReadRepo,\n"
-        "31:     private readonly interviewScheduleRepo: IInterviewScheduleRepository,\n"
-        "32:     private readonly geminiSvc: IAIService,\n"
-        "33:     private readonly mailSvc: IMailService,\n"
-        "34:   ) { }\n"
-        "35: \n"
-        "36:   async execute(input: ScheduleInterviewInput): Promise<ScheduleInterviewResult> {\n"
-        "37:     if (!input.candidateID || !input.jobID) {\n"
-        "38:       throw new Error('Mã ứng viên và mã công việc không được để trống.');\n"
-        "39:     }\n"
-        "40: \n"
-        "41:     const candidate = await this.candidateRepo.getById(input.candidateID);\n"
-        "42:     if (!candidate) throw new Error('Không tìm thấy thông tin ứng viên.');\n"
-        "43:     if (!candidate.getPersonal().email) throw new Error('Ứng viên chưa có email để gửi thư mời.');\n"
-        "44: \n"
-        "45:     const job = await this.jobRepo.getById(input.jobID);\n"
-        "46:     if (!job) throw new Error('Không tìm thấy thông tin công việc (Job).');\n"
-        "47: \n"
-        "48:     const analysis = await this.aiAnalysisRepo.getAnalysisByCandidateId(input.candidateID);\n"
-        "49:     if (!analysis) throw new Error('Ứng viên chưa được AI phân tích. Vui lòng chạy phân tích trước khi đặt lịch.');\n"
-        "50: \n"
-        "51:     const isOverlap = await this.interviewScheduleRepo.checkOverlap(input.userId, input.time, input.durationMinutes);\n"
-        "52:     if (isOverlap) {\n"
-        "53:       throw new Error('Khung giờ này đã có lịch khác. Vui lòng chọn giờ lại');\n"
-        "54:     }\n"
-        "55: \n"
-        "56:     const created = await this.interviewScheduleRepo.createSchedule({\n"
-        "57:       time: input.time,\n"
-        "58:       address: input.address,\n"
-        "59:       candidateId: input.candidateID,\n"
-        "60:       userId: input.userId,\n"
-        "61:       status: 'scheduled',\n"
-        "62:     });\n"
-        "63:     if (!created) throw new Error('Không thể tạo lịch phỏng vấn.');\n"
-        "64: \n"
-        "65:     const invite = buildInterviewCalendarInvite({\n"
-        "66:       uid: `${created.getId()}@hr-agent`,\n"
-        "67:       startTime: input.time,\n"
-        "68:       durationMinutes: input.durationMinutes,\n"
-        "69:       summary: `Phỏng vấn - ${job.getTitle()}`,\n"
-        "70:       description: [\n"
-        "71:         `Phỏng vấn vị trí: ${job.getTitle()}`,\n"
-        "72:         `Ghi chú: ${input.notes ?? ''}`,\n"
-        "73:       ].filter(Boolean).join('\\n'),\n"
-        "74:       location: input.address,\n"
-        "75:       organizerEmail: process.env.MAIL_USER,\n"
-        "76:       attendeeEmail: candidate.getPersonal().email,\n"
-        "77:     });\n"
-        "78: \n"
-        "79:     const emailPayload = {\n"
-        "80:       candidate: {\n"
-        "81:         fullName: candidate.getPersonal().fullName,\n"
-        "82:         email: candidate.getPersonal().email,\n"
-        "83:       },\n"
-        "84:       job: job.getDetailJob(),\n"
-        "85:       schedule: {\n"
-        "86:         time: input.time.toISOString(),\n"
-        "87:         durationMinutes: input.durationMinutes,\n"
-        "88:         address: input.address,\n"
+        "1:  export class ScheduleInterviewUseCase {\n"
+        "2:    constructor(\n"
+        "3:      private readonly candidateRepo: ICandidateReadRepo & ICandidateWriteRepo,\n"
+        "4:      private readonly jobRepo: IJobReadRepo,\n"
+        "5:      private readonly aiAnalysisRepo: IAnalysisReadRepo,\n"
+        "6:      private readonly interviewScheduleRepo: IInterviewScheduleRepository,\n"
+        "7:      private readonly geminiSvc: IAIService,\n"
+        "8:      private readonly mailSvc: IMailService,\n"
+        "9:    ) { }\n"
+        "10: \n"
+        "11:   async execute(input: ScheduleInterviewInput): Promise<ScheduleInterviewResult> {\n"
+        "12:     if (!input.candidateID || !input.jobID) {\n"
+        "13:       throw new Error('Mã ứng viên và mã công việc không được để trống.');\n"
+        "14:     }\n"
+        "15: \n"
+        "16:     const candidate = await this.candidateRepo.getById(input.candidateID);\n"
+        "17:     if (!candidate) throw new Error('Không tìm thấy thông tin ứng viên.');\n"
+        "18:     if (!candidate.getPersonal().email) throw new Error('Ứng viên chưa có email để gửi thư mời.');\n"
+        "19: \n"
+        "20:     const job = await this.jobRepo.getById(input.jobID);\n"
+        "21:     if (!job) throw new Error('Không tìm thấy thông tin công việc (Job).');\n"
+        "22: \n"
+        "23:     const analysis = await this.aiAnalysisRepo.getAnalysisByCandidateId(input.candidateID);\n"
+        "24:     if (!analysis) throw new Error('Ứng viên chưa được AI phân tích. Vui lòng chạy phân tích trước khi đặt lịch.');\n"
+        "25: \n"
+        "26:     const isOverlap = await this.interviewScheduleRepo.checkOverlap(input.userId, input.time, input.durationMinutes);\n"
+        "27:     if (isOverlap) {\n"
+        "28:       throw new Error('Khung giờ này đã có lịch khác. Vui lòng chọn giờ lại');\n"
+        "29:     }\n"
+        "30: \n"
+        "31:     const created = await this.interviewScheduleRepo.createSchedule({\n"
+        "32:       time: input.time,\n"
+        "33:       address: input.address,\n"
+        "34:       candidateId: input.candidateID,\n"
+        "35:       userId: input.userId,\n"
+        "36:       status: 'scheduled',\n"
+        "37:     });\n"
+        "38:     if (!created) throw new Error('Không thể tạo lịch phỏng vấn.');\n"
+        "39: \n"
+        "40:     const invite = buildInterviewCalendarInvite({\n"
+        "41:       uid: `${created.getId()}@hr-agent`,\n"
+        "42:       startTime: input.time,\n"
+        "43:       durationMinutes: input.durationMinutes,\n"
+        "44:       summary: `Phỏng vấn - ${job.getTitle()}`,\n"
+        "45:       description: [\n"
+        "46:         `Phỏng vấn vị trí: ${job.getTitle()}`,\n"
+        "47:         `Ghi chú: ${input.notes ?? ''}`,\n"
+        "48:       ].filter(Boolean).join('\\n'),\n"
+        "49:       location: input.address,\n"
+        "50:       organizerEmail: process.env.MAIL_USER,\n"
+        "51:       attendeeEmail: candidate.getPersonal().email,\n"
+        "52:     });\n"
+        "53: \n"
+        "54:     const emailPayload = {\n"
+        "55:       candidate: {\n"
+        "56:         fullName: candidate.getPersonal().fullName,\n"
+        "57:         email: candidate.getPersonal().email,\n"
+        "58:       },\n"
+        "59:       job: job.getDetailJob(),\n"
+        "60:       schedule: {\n"
+        "61:         time: input.time.toISOString(),\n"
+        "62:         durationMinutes: input.durationMinutes,\n"
+        "63:         address: input.address,\n"
+        "64:       },\n"
+        "65:       aiAnalysis: analysis,\n"
+        "66:       notes: input.notes ?? '',\n"
+        "67:     };\n"
+        "68: \n"
+        "69:     let subject = `Thư mời phỏng vấn - ${job.getTitle()}`;\n"
+        "70:     let html = `<p>Xin chào ${candidate.getPersonal().fullName || 'bạn'},</p><p>Chúng tôi xin mời bạn tham gia phỏng vấn cho vị trí <b>${job.getTitle()}</b>.</p>`;\n"
+        "71: \n"
+        "72:     try {\n"
+        "73:       const generated = await this.geminiSvc.generateInterviewEmail(emailPayload);\n"
+        "74:       if (generated?.subject?.trim()) {\n"
+        "75:         subject = generated.subject.trim();\n"
+        "76:       }\n"
+        "77:       if (generated?.html) {\n"
+        "78:         html = generated.html;\n"
+        "79:       }\n"
+        "80:     } catch (e) {\n"
+        "81:       console.warn('Không thể tạo email bằng AI, sử dụng mẫu mặc định.');\n"
+        "82:     }\n"
+        "83: \n"
+        "84:     const emailSent = await this.mailSvc.sendEmail(candidate.getPersonal().email, subject, html, [\n"
+        "85:       {\n"
+        "86:         filename: invite.filename,\n"
+        "87:         content: invite.content,\n"
+        "88:         contentType: invite.contentType,\n"
         "89:       },\n"
-        "90:       aiAnalysis: analysis,\n"
-        "91:       notes: input.notes ?? '',\n"
-        "92:     };\n"
+        "90:     ]);\n"
+        "91: \n"
+        "92:     await this.candidateRepo.updateStatus(input.candidateID, { status: CandidateStatus.INTERVIEW });\n"
         "93: \n"
-        "94:     let subject = `Thư mời phỏng vấn - ${job.getTitle()}`;\n"
-        "95:     let html = `<p>Xin chào ${candidate.getPersonal().fullName || 'bạn'},</p><p>Chúng tôi xin mời bạn tham gia phỏng vấn cho vị trí <b>${job.getTitle()}</b>.</p>`;\n"
-        "96: \n"
-        "97:     try {\n"
-        "98:       const generated = await this.geminiSvc.generateInterviewEmail(emailPayload);\n"
-        "99:       if (generated?.subject?.trim()) {\n"
-        "100:        subject = generated.subject.trim();\n"
-        "101:      }\n"
-        "102:      if (generated?.html) {\n"
-        "103:        html = generated.html;\n"
-        "104:      }\n"
-        "105:    } catch (e) {\n"
-        "106:      console.warn('Không thể tạo email bằng AI, sử dụng mẫu mặc định.');\n"
-        "107:    }\n"
-        "108: \n"
-        "109:    const emailSent = await this.mailSvc.sendEmail(candidate.getPersonal().email, subject, html, [\n"
-        "110:      {\n"
-        "111:        filename: invite.filename,\n"
-        "112:        content: invite.content,\n"
-        "113:        contentType: invite.contentType,\n"
-        "114:      },\n"
-        "115:    ]);\n"
-        "116: \n"
-        "117:    await this.candidateRepo.updateStatus(input.candidateID, { status: CandidateStatus.INTERVIEW });\n"
-        "118: \n"
-        "119:    return { schedule: created.getDetail(), emailSent };\n"
-        "120:  }\n"
-        "121:}"
+        "94:     return { schedule: created.getDetail(), emailSent };\n"
+        "95:   }\n"
+        "96: }"
     )
 
     p = doc.add_paragraph()
@@ -207,26 +207,26 @@ def add_blocks_table(doc):
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
 
     blocks = [
-        ("Start", "Dòng 36", "Bắt đầu hàm execute(input: ScheduleInterviewInput)", "Điểm vào (Entry Point)"),
-        ("Node 1", "Dòng 37–38", "Tiếp nhận tham số, kiểm tra if (!input.candidateID || !input.jobID)", "Điểm quyết định (Decision)"),
-        ("Node 2", "Dòng 38", "throw new Error('Mã ứng viên và mã công việc không được để trống.')", "Điểm thoát (Exit Exception 1)"),
-        ("Node 3", "Dòng 41–42", "candidate = await candidateRepo.getById(candidateID), if (!candidate)", "Điểm quyết định (Decision)"),
-        ("Node 4", "Dòng 42", "throw new Error('Không tìm thấy thông tin ứng viên.')", "Điểm thoát (Exit Exception 2)"),
-        ("Node 5", "Dòng 43", "Kiểm tra if (!candidate.getPersonal().email)", "Điểm quyết định (Decision)"),
-        ("Node 6", "Dòng 43", "throw new Error('Ứng viên chưa có email để gửi thư mời.')", "Điểm thoát (Exit Exception 3)"),
-        ("Node 7", "Dòng 45–46", "job = await jobRepo.getById(input.jobID), if (!job)", "Điểm quyết định (Decision)"),
-        ("Node 8", "Dòng 46", "throw new Error('Không tìm thấy thông tin công việc (Job).')", "Điểm thoát (Exit Exception 4)"),
-        ("Node 9", "Dòng 48–49", "analysis = await aiAnalysisRepo.getAnalysisByCandidateId(), if (!analysis)", "Điểm quyết định (Decision)"),
-        ("Node 10", "Dòng 49", "throw new Error('Ứng viên chưa được AI phân tích. Vui lòng chạy phân tích...')", "Điểm thoát (Exit Exception 5)"),
-        ("Node 11", "Dòng 51–53", "isOverlap = await interviewScheduleRepo.checkOverlap(), if (isOverlap)", "Điểm quyết định (Decision)"),
-        ("Node 12", "Dòng 53", "throw new Error('Khung giờ này đã có lịch khác. Vui lòng chọn giờ lại')", "Điểm thoát (Exit Exception 6)"),
-        ("Node 13", "Dòng 56–63", "created = await interviewScheduleRepo.createSchedule(), if (!created)", "Điểm quyết định (Decision)"),
-        ("Node 14", "Dòng 63", "throw new Error('Không thể tạo lịch phỏng vấn.')", "Điểm thoát (Exit Exception 7)"),
-        ("Node 15", "Dòng 65–95", "buildCalendarInvite, chuẩn bị emailPayload, gán template mặc định subject, html", "Khối xử lý (Process)"),
-        ("Node 16a", "Dòng 97–104", "Khối Try: gọi AI geminiSvc.generateInterviewEmail(), cập nhật subject, html", "Khối xử lý (Process)"),
-        ("Node 16b", "Dòng 105–107", "Khối Catch: bắt lỗi AI, ghi log console.warn(), giữ nguyên mẫu email mặc định", "Xử lý ngoại lệ (Exception Handle)"),
-        ("Node 17", "Dòng 109–117", "Gửi email invite: mailSvc.sendEmail(), candidateRepo.updateStatus('INTERVIEW')", "Khối xử lý (Process)"),
-        ("Node 18", "Dòng 119", "return { schedule: created.getDetail(), emailSent }", "Điểm thoát (Exit Success)")
+        ("Start", "Dòng 11", "Bắt đầu hàm execute(input: ScheduleInterviewInput)", "Điểm vào (Entry Point)"),
+        ("Node 1", "Dòng 12–14", "Tiếp nhận tham số, kiểm tra if (!input.candidateID || !input.jobID)", "Điểm quyết định (Decision)"),
+        ("Node 2", "Dòng 13", "throw new Error('Mã ứng viên và mã công việc không được để trống.')", "Điểm thoát (Exit Exception 1)"),
+        ("Node 3", "Dòng 16–17", "candidate = await candidateRepo.getById(candidateID), if (!candidate)", "Điểm quyết định (Decision)"),
+        ("Node 4", "Dòng 17", "throw new Error('Không tìm thấy thông tin ứng viên.')", "Điểm thoát (Exit Exception 2)"),
+        ("Node 5", "Dòng 18", "Kiểm tra if (!candidate.getPersonal().email)", "Điểm quyết định (Decision)"),
+        ("Node 6", "Dòng 18", "throw new Error('Ứng viên chưa có email để gửi thư mời.')", "Điểm thoát (Exit Exception 3)"),
+        ("Node 7", "Dòng 20–21", "job = await jobRepo.getById(input.jobID), if (!job)", "Điểm quyết định (Decision)"),
+        ("Node 8", "Dòng 21", "throw new Error('Không tìm thấy thông tin công việc (Job).')", "Điểm thoát (Exit Exception 4)"),
+        ("Node 9", "Dòng 23–24", "analysis = await aiAnalysisRepo.getAnalysisByCandidateId(), if (!analysis)", "Điểm quyết định (Decision)"),
+        ("Node 10", "Dòng 24", "throw new Error('Ứng viên chưa được AI phân tích. Vui lòng chạy phân tích...')", "Điểm thoát (Exit Exception 5)"),
+        ("Node 11", "Dòng 26–29", "isOverlap = await interviewScheduleRepo.checkOverlap(), if (isOverlap)", "Điểm quyết định (Decision)"),
+        ("Node 12", "Dòng 28", "throw new Error('Khung giờ này đã có lịch khác. Vui lòng chọn giờ lại')", "Điểm thoát (Exit Exception 6)"),
+        ("Node 13", "Dòng 31–38", "created = await interviewScheduleRepo.createSchedule(), if (!created)", "Điểm quyết định (Decision)"),
+        ("Node 14", "Dòng 38", "throw new Error('Không thể tạo lịch phỏng vấn.')", "Điểm thoát (Exit Exception 7)"),
+        ("Node 15", "Dòng 40–70", "buildCalendarInvite, chuẩn bị emailPayload, gán template mặc định subject, html", "Khối xử lý (Process)"),
+        ("Node 16a", "Dòng 72–79", "Khối Try: gọi AI geminiSvc.generateInterviewEmail(), cập nhật subject, html", "Khối xử lý (Process)"),
+        ("Node 16b", "Dòng 80–82", "Khối Catch: bắt lỗi AI, ghi log console.warn(), giữ nguyên mẫu email mặc định", "Xử lý ngoại lệ (Exception Handle)"),
+        ("Node 17", "Dòng 84–92", "Gửi email invite: mailSvc.sendEmail(), candidateRepo.updateStatus('INTERVIEW')", "Khối xử lý (Process)"),
+        ("Node 18", "Dòng 94", "return { schedule: created.getDetail(), emailSent }", "Điểm thoát (Exit Success)")
     ]
 
     table = doc.add_table(rows=len(blocks) + 1, cols=4)
