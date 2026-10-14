@@ -172,54 +172,128 @@ Dựa trên nguyên lý khối cơ bản (Basic Block là dãy các câu lệnh 
 
 ---
 
-## 3. XÂY DỰNG ĐỒ THỊ DÒNG ĐIỀU KHIỂN (CONTROL FLOW GRAPH - CFG)
+## 3. XÂY DỰNG ĐỒ THỊ DÒNG ĐIỀU KHIỂN (CFG) CHO HÀM THEO C1, C2, C3
 
 ### 3.1. Đồ thị dòng điều khiển ứng với độ đo C1 và C2 (Statement & Decision Coverage)
 
-Đồ thị dưới đây mô tả chính xác luồng điều khiển bao gồm điểm vào Start (Dòng 8), các nhánh rẽ điều kiện tuần tự, vòng lặp và nhánh rẽ ngoại lệ của khối `try-catch`:
+Ở cấp độ độ đo C1 (phủ câu lệnh) và C2 (phủ nhánh quyết định), mỗi khối lệnh điều kiện phức hợp được biểu diễn dưới dạng 1 điểm quyết định đơn vị rẽ 2 nhánh Đúng (True) và Sai (False):
+
+![Đồ thị CFG C1 và C2](cfg_uc09_c1_c2.png)
 
 ```mermaid
 flowchart TD
-    Start(["Start: Dòng 8 - execute(input)"]) --> N1{"Node 1: !candidateIds || len == 0?"}
+    %% Định nghĩa bảng màu trực quan chuẩn kiểm thử đồ thị
+    classDef startEnd fill:#D0E5FF,stroke:#2B579A,stroke-width:2px,color:#0B2545,font-weight:bold;
+    classDef decision fill:#FFF2CC,stroke:#D6B656,stroke-width:2px,color:#5C4300,font-weight:bold;
+    classDef process fill:#E1D5E7,stroke:#9673A6,stroke-width:2px,color:#432874,font-weight:bold;
+    classDef exception fill:#F8CECC,stroke:#B85450,stroke-width:2px,color:#7A1E1E,font-weight:bold;
+
+    Start(["Start: Dòng 8 - execute(input)"]):::startEnd --> N1{"Node 1: !candidateIds || len == 0?"}:::decision
     
-    N1 -- "True" --> N2["Node 2: throw 'Danh sách trống'"]
-    N1 -- "False" --> N3{"Node 3: !title?.trim()?"}
+    N1 -- "True" --> N2["Node 2: throw 'Danh sách trống'"]:::exception
+    N1 -- "False" --> N3{"Node 3: !title?.trim()?"}:::decision
     
-    N3 -- "True" --> N4["Node 4: throw 'Tiêu đề trống'"]
-    N3 -- "False" --> N5{"Node 5: !content?.trim()?"}
+    N3 -- "True" --> N4["Node 4: throw 'Tiêu đề trống'"]:::exception
+    N3 -- "False" --> N5{"Node 5: !content?.trim()?"}:::decision
     
-    N5 -- "True" --> N6["Node 6: throw 'Nội dung trống'"]
-    N5 -- "False" --> N7["Node 7: failed=[], totalSent=0, Promise.all"]
+    N5 -- "True" --> N6["Node 6: throw 'Nội dung trống'"]:::exception
+    N5 -- "False" --> N7["Node 7: failed=[], totalSent=0, Promise.all"]:::process
     
-    N7 --> N8{"Node 8: for (i < candidates.length)?"}
+    N7 --> N8{"Node 8: for (i < candidates.length)?"}:::decision
     
-    N8 -- "False (Hết ds)" --> N20["Node 20: return { success: true, ... }"]
-    N8 -- "True (Còn ứng viên)" --> N9{"Node 9: !candidate?"}
+    N8 -- "False (Hết ds)" --> N20["Node 20: return { success: true, ... }"]:::startEnd
+    N8 -- "True (Còn ứng viên)" --> N9{"Node 9: !candidate?"}:::decision
     
-    N9 -- "True" --> N10["Node 10: failed.push & continue"]
+    N9 -- "True" --> N10["Node 10: failed.push & continue"]:::exception
     N10 --> N8
     
-    N9 -- "False" --> N11{"Node 11: !personal?.email?"}
-    N11 -- "True" --> N12["Node 12: failed.push & continue"]
+    N9 -- "False" --> N11{"Node 11: !personal?.email?"}:::decision
+    N11 -- "True" --> N12["Node 12: failed.push & continue"]:::exception
     N12 --> N8
     
-    N11 -- "False" --> N13{"Node 13: if (jobID)?"}
-    N13 -- "True" --> N14a["Node 14a (Try): Fetch jobRepo.getById()"]
-    N13 -- "False" --> N15["Node 15: replacePlaceholders & sendEmail"]
+    N11 -- "False" --> N13{"Node 13: if (jobID)?"}:::decision
+    N13 -- "True" --> N14a["Node 14a (Try): Fetch jobRepo.getById()"]:::process
+    N13 -- "False" --> N15["Node 15: replacePlaceholders & sendEmail"]:::process
     
     N14a -- "Thành công" --> N15
-    N14a -. "Lỗi DB" .-> N14b["Node 14b (Catch): console.warn(Lỗi Job)"]
+    N14a -. "Lỗi DB" .-> N14b["Node 14b (Catch): console.warn(Lỗi Job)"]:::exception
     N14b --> N15
     
-    N15 --> N16{"Node 16: if (sent)?"}
+    N15 --> N16{"Node 16: if (sent)?"}:::decision
     
-    N16 -- "True" --> N17["Node 17: totalSent++"]
-    N16 -- "False" --> N18["Node 18: failed.push (Lỗi gửi mail)"]
+    N16 -- "True" --> N17["Node 17: totalSent++"]:::process
+    N16 -- "False" --> N18["Node 18: failed.push (Lỗi gửi mail)"]:::exception
     
     N17 --> N8
     N18 --> N8
     
-    N9 -. "Runtime Exception" .-> N19["Node 19: catch (error) -> failed.push"]
+    N9 -. "Runtime Exception" .-> N19["Node 19: catch (error) -> failed.push"]:::exception
+    N11 -. "Runtime Exception" .-> N19
+    N15 -. "Runtime Exception" .-> N19
+    N19 --> N8
+```
+
+### 3.2. Đồ thị dòng điều khiển ứng với độ đo C3 (Condition / Multiple Condition Coverage)
+
+Theo lý thuyết độ đo C3, các biểu thức điều kiện phức hợp chứa toán tử logic (`||`, `&&`) được phân rã thành các nút quyết định con tương ứng để kiểm tra từng điều kiện thành phần:
+- **Tại Node 1 (`!input.candidateIds || input.candidateIds.length === 0`):** Phân rã thành **Node 1a** (`!input.candidateIds`) và **Node 1b** (`input.candidateIds.length === 0`).
+- **Cơ chế ngắt mạch (Short-circuit evaluation):**
+  - Nếu `Node 1a` nhận giá trị **True** $\rightarrow$ biểu thức lập tức ngắt mạch và nhảy thẳng sang **Node 2** (`throw 'Danh sách ứng viên không được để trống.'`) mà không cần đánh giá `Node 1b`.
+  - Nếu `Node 1a` nhận giá trị **False** $\rightarrow$ chuyển sang đánh giá `Node 1b`. Nếu `Node 1b` là **True** $\rightarrow$ nhảy sang **Node 2**. Nếu `Node 1b` là **False** $\rightarrow$ chuyển sang **Node 3**.
+
+![Đồ thị CFG C3](cfg_uc09_c3.png)
+
+```mermaid
+flowchart TD
+    %% Định nghĩa bảng màu trực quan chuẩn kiểm thử đồ thị
+    classDef startEnd fill:#D0E5FF,stroke:#2B579A,stroke-width:2px,color:#0B2545,font-weight:bold;
+    classDef decision fill:#FFF2CC,stroke:#D6B656,stroke-width:2px,color:#5C4300,font-weight:bold;
+    classDef process fill:#E1D5E7,stroke:#9673A6,stroke-width:2px,color:#432874,font-weight:bold;
+    classDef exception fill:#F8CECC,stroke:#B85450,stroke-width:2px,color:#7A1E1E,font-weight:bold;
+
+    Start(["Start: Dòng 8 - execute(input)"]):::startEnd --> N1a{"Node 1a: !candidateIds?"}:::decision
+    
+    N1a -- "True (Ngắt mạch)" --> N2["Node 2: throw 'Danh sách trống'"]:::exception
+    N1a -- "False" --> N1b{"Node 1b: candidateIds.length == 0?"}:::decision
+    
+    N1b -- "True" --> N2
+    N1b -- "False" --> N3{"Node 3: !title?.trim()?"}:::decision
+    
+    N3 -- "True" --> N4["Node 4: throw 'Tiêu đề trống'"]:::exception
+    N3 -- "False" --> N5{"Node 5: !content?.trim()?"}:::decision
+    
+    N5 -- "True" --> N6["Node 6: throw 'Nội dung trống'"]:::exception
+    N5 -- "False" --> N7["Node 7: failed=[], totalSent=0, Promise.all"]:::process
+    
+    N7 --> N8{"Node 8: for (i < candidates.length)?"}:::decision
+    
+    N8 -- "False (Hết ds)" --> N20["Node 20: return { success: true, ... }"]:::startEnd
+    N8 -- "True (Còn ứng viên)" --> N9{"Node 9: !candidate?"}:::decision
+    
+    N9 -- "True" --> N10["Node 10: failed.push & continue"]:::exception
+    N10 --> N8
+    
+    N9 -- "False" --> N11{"Node 11: !personal?.email?"}:::decision
+    N11 -- "True" --> N12["Node 12: failed.push & continue"]:::exception
+    N12 --> N8
+    
+    N11 -- "False" --> N13{"Node 13: if (jobID)?"}:::decision
+    N13 -- "True" --> N14a["Node 14a (Try): Fetch jobRepo.getById()"]:::process
+    N13 -- "False" --> N15["Node 15: replacePlaceholders & sendEmail"]:::process
+    
+    N14a -- "Thành công" --> N15
+    N14a -. "Lỗi DB" .-> N14b["Node 14b (Catch): console.warn(Lỗi Job)"]:::exception
+    N14b --> N15
+    
+    N15 --> N16{"Node 16: if (sent)?"}:::decision
+    
+    N16 -- "True" --> N17["Node 17: totalSent++"]:::process
+    N16 -- "False" --> N18["Node 18: failed.push (Lỗi gửi mail)"]:::exception
+    
+    N17 --> N8
+    N18 --> N8
+    
+    N9 -. "Runtime Exception" .-> N19["Node 19: catch (error) -> failed.push"]:::exception
     N11 -. "Runtime Exception" .-> N19
     N15 -. "Runtime Exception" .-> N19
     N19 --> N8

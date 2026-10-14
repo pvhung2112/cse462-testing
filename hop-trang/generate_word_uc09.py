@@ -1,3 +1,4 @@
+import os
 import docx
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -230,13 +231,57 @@ def add_blocks_table(doc):
 
     doc.add_paragraph()
 
-def add_cfg_and_mccabe(doc):
-    h = doc.add_heading("3. ĐỒ THỊ DÒNG ĐIỀU KHIỂN & ĐỘ PHỨC TẠP CYCLOMATIC (MCCABE)", level=1)
+def add_cfg_section(doc, base_dir):
+    h = doc.add_heading("3. XÂY DỰNG ĐỒ THỊ DÒNG ĐIỀU KHIỂN (CFG) CHO HÀM THEO C1, C2, C3", level=1)
+    h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
+
+    # 3.1
+    h_c1 = doc.add_heading("3.1. Đồ thị dòng điều khiển ứng với độ đo C1 và C2", level=2)
+    h_c1.style.font.color.rgb = RGBColor(0x2E, 0x75, 0xB6)
+    
+    p_c1 = doc.add_paragraph()
+    r_c1 = p_c1.add_run(
+        "Ở cấp độ độ đo C1 (phủ câu lệnh) và C2 (phủ nhánh quyết định), mỗi khối lệnh điều kiện phức hợp được biểu diễn dưới dạng 1 điểm quyết định đơn vị rẽ 2 nhánh Đúng (True) và Sai (False):"
+    )
+    r_c1.font.size = Pt(10)
+
+    img_c1 = os.path.join(base_dir, "cfg_uc09_c1_c2.png")
+    if os.path.exists(img_c1):
+        p_img1 = doc.add_paragraph()
+        p_img1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r_img1 = p_img1.add_run()
+        r_img1.add_picture(img_c1, width=Inches(4.5))
+
+    doc.add_paragraph()
+
+    # 3.2
+    h_c3 = doc.add_heading("3.2. Đồ thị dòng điều khiển ứng với độ đo C3", level=2)
+    h_c3.style.font.color.rgb = RGBColor(0x2E, 0x75, 0xB6)
+
+    p_c3 = doc.add_paragraph()
+    r_c3 = p_c3.add_run(
+        "Theo lý thuyết độ đo C3 (Condition / Multiple Condition Coverage), các biểu thức điều kiện phức hợp chứa toán tử logic (||, &&) được phân rã thành các nút quyết định con tương ứng để kiểm tra từng điều kiện thành phần:\n"
+        "• Tại Node 1 (!input.candidateIds || input.candidateIds.length === 0): phân rã thành Node 1a (!input.candidateIds) và Node 1b (input.candidateIds.length === 0).\n"
+        "• Cơ chế ngắt mạch (Short-circuit evaluation): Nếu Node 1a nhận giá trị True, biểu thức lập tức ngắt mạch và nhảy thẳng sang Node 2 (throw 'Danh sách ứng viên không được để trống.') mà không cần đánh giá Node 1b."
+    )
+    r_c3.font.size = Pt(10)
+
+    img_c3 = os.path.join(base_dir, "cfg_uc09_c3.png")
+    if os.path.exists(img_c3):
+        p_img2 = doc.add_paragraph()
+        p_img2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r_img2 = p_img2.add_run()
+        r_img2.add_picture(img_c3, width=Inches(4.5))
+
+    doc.add_paragraph()
+
+def add_mccabe_section(doc):
+    h = doc.add_heading("4. TÍNH ĐỘ PHỨC TẠP CYCLOMATIC (MCCABE)", level=1)
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
 
     p = doc.add_paragraph()
     r = p.add_run(
-        "Đồ thị dòng điều khiển (CFG) của phương thức execute được xây dựng với 22 đỉnh (Đỉnh Start tại Dòng 8 + 21 Node nghiệp vụ) và 30 cung (Edges) phản ánh chính xác cả các nhánh rẽ ngoại lệ:\n\n"
+        "Độ phức tạp Cyclomatic được tính độc lập theo 3 phương pháp McCabe:\n\n"
         "• Phương pháp 1 (Dựa trên số cung E và số đỉnh N):\n"
         "   - Số đỉnh N = 22 (gồm đỉnh Start tại dòng 8 và 21 Node từ Node 1 đến Node 20, phân rã 14a, 14b).\n"
         "   - Số cung E = 30, gồm 30 cung rẽ nhánh điều kiện, tuần tự, lặp và ngoại lệ:\n"
@@ -255,9 +300,59 @@ def add_cfg_and_mccabe(doc):
     r.font.size = Pt(10)
     doc.add_paragraph()
 
-def add_testcases_table(doc):
-    h = doc.add_heading("4. BẢNG THIẾT KẾ CA KIỂM THỬ HỘP TRẮNG (C1, C2, C3)", level=1)
+def add_paths_table(doc):
+    h = doc.add_heading("5. THIẾT KẾ CÁC ĐƯỜNG DẪN CƠ SỞ (BASIS PATHS)", level=1)
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
+
+    paths = [
+        ("Path 1", "Start -> 1 -> 2", "Nhánh lỗi danh sách ứng viên rỗng / undefined"),
+        ("Path 2", "Start -> 1 -> 3 -> 4", "Nhánh lỗi tiêu đề email bị để trống"),
+        ("Path 3", "Start -> 1 -> 3 -> 5 -> 6", "Nhánh lỗi nội dung email bị để trống"),
+        ("Path 4", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 20", "Nhánh danh sách ứng viên hợp lệ nhưng vòng lặp 0 lần"),
+        ("Path 5", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 10 -> 8 -> 20", "Nhánh không tìm thấy ứng viên trong database"),
+        ("Path 6", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 11 -> 12 -> 8 -> 20", "Nhánh ứng viên không có địa chỉ email"),
+        ("Path 7", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 11 -> 13 -> 15 -> 16 -> 18 -> 8 -> 20", "Nhánh không có jobID, gửi email qua SMTP thất bại"),
+        ("Path 8", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 11 -> 13 -> 14a -> 15 -> 16 -> 17 -> 8 -> 20", "Happy Path: có jobID, query Job OK, gửi mail thành công"),
+        ("Path 9", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 11 -> 13 -> 14a -> 14b -> 15 -> 16 -> 17 -> 8 -> 20", "Nhánh có jobID nhưng query Job lỗi, bắt log và vẫn gửi mail"),
+        ("Path 10", "Start -> 1 -> 3 -> 5 -> 7 -> 8 -> 9 -> 11 -> 19 -> 8 -> 20", "Nhánh phát sinh ngoại lệ đột ngột trong khối try ngoài")
+    ]
+
+    table = doc.add_table(rows=len(paths) + 1, cols=3)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(table)
+
+    headers = ["Mã đường dẫn", "Chuỗi các khối lệnh (Nodes Sequence)", "Mục tiêu bao phủ"]
+    for j, h_text in enumerate(headers):
+        cell = table.rows[0].cells[j]
+        set_cell_background(cell, "1F4E79")
+        set_cell_margins(cell)
+        p = cell.paragraphs[0]
+        r = p.add_run(h_text)
+        r.bold = True
+        r.font.size = Pt(9.5)
+        r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+    for i, row_data in enumerate(paths):
+        row = table.rows[i + 1]
+        for j, val in enumerate(row_data):
+            cell = row.cells[j]
+            if i % 2 == 1:
+                set_cell_background(cell, "F9FAFB")
+            set_cell_margins(cell)
+            p = cell.paragraphs[0]
+            r = p.add_run(val)
+            r.font.size = Pt(8.5)
+            if j == 0:
+                r.bold = True
+
+    doc.add_paragraph()
+
+def add_testcases_table(doc):
+    h = doc.add_heading("6. BẢNG THIẾT KẾ CA KIỂM THỬ HỘP TRẮNG (C1, C2, C3)", level=1)
+    h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
+
+    h_sub = doc.add_heading("6.1. Bảng ca kiểm thử đáp ứng độ đo C1 (Statement) & C2 (Branch Coverage)", level=2)
+    h_sub.style.font.color.rgb = RGBColor(0x2E, 0x75, 0xB6)
 
     tcs = [
         ("TC_WB_01", "Path 1: Start -> 1 -> 2", "candidateIds: []", "Ném ngoại lệ: 'Danh sách ứng viên không được để trống.'", "Đạt"),
@@ -302,19 +397,60 @@ def add_testcases_table(doc):
 
     doc.add_paragraph()
 
-    # SECTION 5: CONCLUSION
-    h2 = doc.add_heading("5. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN", level=1)
-    h2.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
-    p2 = doc.add_paragraph()
-    r2 = p2.add_run(
-        "1. Độ bao phủ câu lệnh (C1 - Statement Coverage): Đạt 100% (21/21 khối lệnh cơ bản bao gồm cả khối Try 14a và Catch 14b được thực thi).\n"
+    # 6.2 C3 Coverage table
+    h_c3 = doc.add_heading("6.2. Kiểm tra độ đo bao phủ điều kiện C3 (Condition Coverage cho Node 1)", level=2)
+    h_c3.style.font.color.rgb = RGBColor(0x2E, 0x75, 0xB6)
+
+    c3_data = [
+        ("C3_01", "True", "Không xét (Short-circuit)", "True", "Node 2 (Ném ngoại lệ)", "input.candidateIds = null hoặc undefined"),
+        ("C3_02", "False", "True", "True", "Node 2 (Ném ngoại lệ)", "input.candidateIds = [] (Mảng rỗng)"),
+        ("C3_03", "False", "False", "False", "Node 3 (Đi tiếp)", "input.candidateIds = ['CAN_01']")
+    ]
+
+    table_c3 = doc.add_table(rows=len(c3_data) + 1, cols=6)
+    table_c3.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(table_c3)
+
+    c3_headers = ["Ca kiểm thử C3", "!input.candidateIds (A)", "length === 0 (B)", "Kết quả (A || B)", "Nhánh rẽ", "Dữ liệu minh họa"]
+    for j, h_text in enumerate(c3_headers):
+        cell = table_c3.rows[0].cells[j]
+        set_cell_background(cell, "1F4E79")
+        set_cell_margins(cell)
+        p = cell.paragraphs[0]
+        r = p.add_run(h_text)
+        r.bold = True
+        r.font.size = Pt(9)
+        r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+    for i, row_data in enumerate(c3_data):
+        row = table_c3.rows[i + 1]
+        for j, val in enumerate(row_data):
+            cell = row.cells[j]
+            if i % 2 == 1:
+                set_cell_background(cell, "F9FAFB")
+            set_cell_margins(cell)
+            p = cell.paragraphs[0]
+            r = p.add_run(val)
+            r.font.size = Pt(8.5)
+            if j == 0:
+                r.bold = True
+
+    doc.add_paragraph()
+
+def add_conclusion(doc):
+    h = doc.add_heading("7. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN", level=1)
+    h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
+    p = doc.add_paragraph()
+    r = p.add_run(
+        "1. Độ bao phủ câu lệnh (C1 - Statement Coverage): Đạt 100% (22/22 khối lệnh cơ bản bao gồm cả đỉnh Start, khối Try 14a và Catch 14b được thực thi đầy đủ).\n"
         "2. Độ bao phủ nhánh quyết định (C2 - Branch Coverage): Đạt 100% (tất cả 9 điểm quyết định và rẽ nhánh ngoại lệ True/False đều được duyệt qua).\n"
-        "3. Độ bao phủ điều kiện (C3 - Condition Coverage): Đạt 100% cho biểu thức logic phức tại Node 1 (!candidateIds || length === 0).\n\n"
-        "Bộ ca kiểm thử hộp trắng được thiết kế đảm bảo phát hiện sớm các khiếm khuyết trong logic xử lý danh sách rỗng, xử lý ngoại lệ mạng, kiểm tra tính toàn vẹn dữ liệu ứng viên và bảo đảm tính chịu lỗi (Fault-tolerance) của hệ thống tuyển dụng."
+        "3. Độ bao phủ điều kiện (C3 - Condition Coverage): Đạt 100% cho biểu thức logic phức hợp tại Node 1 (!candidateIds || length === 0) theo cơ chế ngắt mạch Short-circuit evaluation.\n\n"
+        "Bộ ca kiểm thử hộp trắng được thiết kế đảm bảo phát hiện sớm các khiếm khuyết trong logic xử lý danh sách rỗng, xử lý ngoại lệ mạng cơ sở dữ liệu, kiểm tra tính toàn vẹn dữ liệu ứng viên và bảo đảm tính chịu lỗi (Fault-tolerance) của hệ thống tuyển dụng."
     )
-    r2.font.size = Pt(10)
+    r.font.size = Pt(10)
 
 def main():
+    base_dir = r'd:\test\cse462-testing\hop-trang'
     doc = docx.Document()
     for s in doc.sections:
         s.top_margin = Inches(0.8)
@@ -326,12 +462,15 @@ def main():
     add_info_table(doc)
     add_code_section(doc)
     add_blocks_table(doc)
-    add_cfg_and_mccabe(doc)
+    add_cfg_section(doc, base_dir)
+    add_mccabe_section(doc)
+    add_paths_table(doc)
     add_testcases_table(doc)
+    add_conclusion(doc)
 
-    out_path = r"d:\test\cse462-testing\hop-trang\KiemThuHopTrang_UC09_TuDongHoaGuiEmail.docx"
+    out_path = os.path.join(base_dir, "KiemThuHopTrang_UC09_TuDongHoaGuiEmail.docx")
     doc.save(out_path)
     print(f"Document saved to: {out_path}")
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
