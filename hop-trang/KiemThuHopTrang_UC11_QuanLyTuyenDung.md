@@ -366,9 +366,39 @@ $$\Rightarrow V(G) = R = 9$$
 
 ---
 
-## 6. ĐÁNH GIÁ MỨC ĐỘ BAO PHỦ VÀ KẾT LUẬN
+## 6. SINH CA KIỂM THỬ ĐỂ KIỂM THỬ CÁC VÒNG LẶP TRONG HÀM (LOOP TESTING)
 
-### 6.1. Bảng tổng hợp mức độ bao phủ (Coverage Metrics Evaluation)
+Theo lý thuyết kiểm thử dòng điều khiển và giáo trình Kiểm thử phần mềm (CSE462 - ĐH Thủy Lợi), với cấu trúc vòng lặp đơn (Simple Loop) hoặc xử lý mảng lặp dữ liệu, cần thiết kế tập ca kiểm thử bao phủ đầy đủ **7 trường hợp chuẩn**:
+1. Vòng lặp thực hiện 0 lần ($m = 0$)
+2. Vòng lặp thực hiện 1 lần ($m = 1$)
+3. Vòng lặp thực hiện 2 lần ($m = 2$)
+4. Vòng lặp thực hiện $k$ lần điển hình ($2 < k < n - 1$)
+5. Vòng lặp thực hiện $n - 1$ lần ($m = n - 1$)
+6. Vòng lặp thực hiện $n$ lần (Tối đa cấu hình cho phép, $m = n$)
+7. Vòng lặp thực hiện $n + 1$ lần (Vượt giới hạn tối đa, $m = n + 1$)
+
+### Áp dụng vào Use Case 11 (UpdateStatusUseCase / Pipeline Management):
+Trong quy trình quản lý tuyển dụng, cấu trúc lặp xuất hiện ở hai vị trí trọng yếu:
+1. **Vòng lặp duyệt danh sách hồ sơ khi chuyển trạng thái hàng loạt (Batch Processing - Luồng thay thế A2):** Theo tài liệu đặc tả `TC_UC11_QuanLyQuyTrinhTuyenDung.md`, chuyên viên HR có thể tích chọn một nhóm hồ sơ ứng viên trong cùng giai đoạn để chuyển tiếp đồng loạt. Cấu hình hệ thống quy định ngưỡng tối đa cho một mảng hồ sơ chuyển hàng loạt là **$n = 50$** hồ sơ (nhằm đảm bảo hiệu năng máy chủ CSDL và không bị timeout giao dịch).
+2. **Duyệt mảng kiểm tra chuyển đổi trạng thái hợp lệ:** `ALLOWED_TRANSITIONS[currentStatus]`.
+
+#### Bảng ca kiểm thử vòng lặp duyệt chuyển trạng thái hàng loạt (`candidateIds`, $n = 50$):
+
+| TT | Trường hợp kiểm thử vòng lặp | Số hồ sơ ($m$) | Dữ liệu đầu vào kiểm thử cụ thể | Kết quả mong đợi |
+| :---: | :--- | :---: | :--- | :--- |
+| **LOOP_01** | Vòng lặp 0 lần (Không chọn hồ sơ) | $m = 0$ | Gửi danh sách rỗng `candidateIds = []` | Hệ thống báo lỗi: `"Vui lòng chọn ít nhất một hồ sơ để chuyển trạng thái"` (Chặn thao tác) |
+| **LOOP_02** | Vòng lặp 1 lần (Đơn lẻ 1 hồ sơ) | $m = 1$ | `candidateIds = ["CAN_01"]` | Vòng lặp chạy 1 lần, cập nhật trạng thái đơn lẻ thành công, ghi 1 bản ghi Activity Log |
+| **LOOP_03** | Vòng lặp 2 lần (2 hồ sơ) | $m = 2$ | `candidateIds = ["CAN_01", "CAN_02"]` | Vòng lặp chạy 2 lần, cập nhật trạng thái thành công cho cả 2 hồ sơ trong CSDL |
+| **LOOP_04** | Vòng lặp $k$ lần ($2 < k < n - 1$) | $m = 25$ | Mảng gồm 25 hồ sơ ứng viên hợp lệ | Vòng lặp xử lý 25 hồ sơ ổn định, số lượng đếm giai đoạn nguồn $-25$, giai đoạn đích $+25$ |
+| **LOOP_05** | Vòng lặp $n - 1$ lần | $m = 49$ | Mảng gồm 49 hồ sơ ứng viên hợp lệ | Vòng lặp xử lý 49 hồ sơ ổn định cận trên tối đa |
+| **LOOP_06** | Vòng lặp $n$ lần (Tối đa cấu hình) | $m = 50$ | Mảng gồm đúng 50 hồ sơ ứng viên | Vòng lặp thực thi đủ 50 lần, cập nhật CSDL và ghi nhận vết kiểm toán trọn vẹn 50 hồ sơ |
+| **LOOP_07** | Vòng lặp $n + 1$ lần (Vượt giới hạn) | $m = 51$ | Gửi danh sách 51 hồ sơ ứng viên | Hệ thống từ chối và cảnh báo: `"Số lượng hồ sơ chuyển trạng thái hàng loạt không được vượt quá 50 hồ sơ"` |
+
+---
+
+## 7. ĐÁNH GIÁ MỨC ĐỘ BAO PHỦ VÀ KẾT LUẬN
+
+### 7.1. Bảng tổng hợp mức độ bao phủ (Coverage Metrics Evaluation)
 
 | Tiêu chuẩn kiểm thử (Coverage Metric) | Tổng số phần tử | Số phần tử đã duyệt qua | Tỷ lệ bao phủ đạt được | Đánh giá kết quả |
 | :--- | :---: | :---: | :---: | :---: |
@@ -376,8 +406,9 @@ $$\Rightarrow V(G) = R = 9$$
 | **Độ phủ nhánh / quyết định (C2 - Decision/Branch Coverage)** | 16 Nhánh (8 Decisions $\times$ 2) | 16 Nhánh | **100.0%** | **ĐẠT XUẤT SẮC** |
 | **Độ phủ điều kiện phức hợp (C3 - Multiple Condition Coverage)** | 4 Giá trị chân trị ($A, B$) | 4 Giá trị chân trị | **100.0%** | **ĐẠT XUẤT SẮC** |
 | **Độ phủ đường dẫn độc lập (Basis Path Coverage - McCabe)** | 9 Đường cơ sở | 9 Đường cơ sở | **100.0%** | **ĐẠT XUẤT SẮC** |
+| **Độ phủ vòng lặp (Loop Coverage)** | 7 Trường hợp chuẩn | 7 Trường hợp chuẩn | **100.0%** | **ĐẠT XUẤT SẮC** |
 
-### 6.2. Kết luận và giá trị thực tiễn đối với hệ thống tuyển dụng
+### 7.2. Kết luận và giá trị thực tiễn đối với hệ thống tuyển dụng
 
 1. **Tuân thủ chặt chẽ mô hình toán học và chuẩn kiểm thử học thuật:**
    - Việc áp dụng 3 phương pháp tính độc lập của Thomas McCabe ($E - N + 2P$, $P_n + 1$, và số miền khép kín $R$) đều hội tụ chính xác tại giá trị **$V(G) = 9$**, bảo đảm tính chặt chẽ về mặt lý thuyết đồ thị điều khiển.

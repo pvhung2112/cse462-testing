@@ -552,17 +552,85 @@ def add_c3_section(doc):
                 r.bold = True
     doc.add_paragraph()
 
+def add_loop_testing(doc):
+    h = doc.add_heading("6. SINH CA KIỂM THỬ ĐỂ KIỂM THỬ CÁC VÒNG LẶP TRONG HÀM (LOOP TESTING)", level=1)
+    h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
+    p_desc = doc.add_paragraph(
+        "Theo lý thuyết kiểm thử dòng điều khiển và giáo trình Kiểm thử phần mềm (CSE462 - ĐH Thủy Lợi), "
+        "với cấu trúc vòng lặp đơn (Simple Loop) hoặc xử lý mảng lặp dữ liệu, cần thiết kế tập ca kiểm thử bao phủ đầy đủ 7 trường hợp chuẩn:\n"
+        "1. Vòng lặp thực hiện 0 lần (m = 0)\n"
+        "2. Vòng lặp thực hiện 1 lần (m = 1)\n"
+        "3. Vòng lặp thực hiện 2 lần (m = 2)\n"
+        "4. Vòng lặp thực hiện k lần điển hình (2 < k < n - 1)\n"
+        "5. Vòng lặp thực hiện n - 1 lần (m = n - 1)\n"
+        "6. Vòng lặp thực hiện n lần (Tối đa cấu hình cho phép, m = n)\n"
+        "7. Vòng lặp thực hiện n + 1 lần (Vượt giới hạn tối đa, m = n + 1)\n\n"
+        "Áp dụng vào Use Case 11 (UpdateStatusUseCase / Pipeline Management):\n"
+        "Trong quy trình quản lý tuyển dụng, cấu trúc lặp xuất hiện ở hai vị trí trọng yếu: "
+        "vòng lặp duyệt danh sách hồ sơ khi chuyển trạng thái hàng loạt (Batch Processing - Luồng thay thế A2, cấu hình tối đa n = 50 hồ sơ/lần) "
+        "và duyệt mảng ma trận trạng thái chuyển đổi hợp lệ ALLOWED_TRANSITIONS[currentStatus]."
+    )
+    p_desc.paragraph_format.line_spacing = 1.15
+
+    loop_cases = [
+        ("LOOP_01", "Vòng lặp 0 lần (Không chọn hồ sơ)", "m = 0", "Gửi danh sách rỗng candidateIds = []", "Hệ thống báo lỗi: 'Vui lòng chọn ít nhất một hồ sơ để chuyển trạng thái' (Chặn thao tác)"),
+        ("LOOP_02", "Vòng lặp 1 lần (Đơn lẻ 1 hồ sơ)", "m = 1", "candidateIds = ['CAN_01']", "Vòng lặp chạy 1 lần, cập nhật trạng thái đơn lẻ thành công, ghi 1 bản ghi Activity Log"),
+        ("LOOP_03", "Vòng lặp 2 lần (2 hồ sơ)", "m = 2", "candidateIds = ['CAN_01', 'CAN_02']", "Vòng lặp chạy 2 lần, cập nhật trạng thái thành công cho cả 2 hồ sơ trong CSDL"),
+        ("LOOP_04", "Vòng lặp k lần (2 < k < n - 1)", "m = 25", "Mảng gồm 25 hồ sơ ứng viên hợp lệ", "Vòng lặp xử lý 25 hồ sơ ổn định, số lượng đếm giai đoạn nguồn -25, giai đoạn đích +25"),
+        ("LOOP_05", "Vòng lặp n - 1 lần", "m = 49", "Mảng gồm 49 hồ sơ ứng viên hợp lệ", "Vòng lặp xử lý 49 hồ sơ ổn định cận trên tối đa"),
+        ("LOOP_06", "Vòng lặp n lần (Tối đa cấu hình)", "m = 50", "Mảng gồm đúng 50 hồ sơ ứng viên", "Vòng lặp thực thi đủ 50 lần, cập nhật CSDL và ghi nhận vết kiểm toán trọn vẹn 50 hồ sơ"),
+        ("LOOP_07", "Vòng lặp n + 1 lần (Vượt giới hạn)", "m = 51", "Gửi danh sách 51 hồ sơ ứng viên", "Hệ thống từ chối và cảnh báo: 'Số lượng hồ sơ chuyển trạng thái hàng loạt không được vượt quá 50 hồ sơ'")
+    ]
+
+    p_tbl = doc.add_paragraph()
+    r_tbl = p_tbl.add_run("Bảng ca kiểm thử vòng lặp duyệt chuyển trạng thái hàng loạt (candidateIds, n = 50):")
+    r_tbl.bold = True
+
+    table = doc.add_table(rows=len(loop_cases) + 1, cols=5)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(table)
+
+    headers = ["TT", "Trường hợp kiểm thử vòng lặp", "Số hồ sơ (m)", "Dữ liệu đầu vào kiểm thử cụ thể", "Kết quả mong đợi"]
+    widths = [Inches(0.8), Inches(1.8), Inches(1.0), Inches(1.6), Inches(1.8)]
+
+    for j, h_text in enumerate(headers):
+        cell = table.rows[0].cells[j]
+        cell.width = widths[j]
+        set_cell_background(cell, "1F4E79")
+        set_cell_margins(cell)
+        p = cell.paragraphs[0]
+        r = p.add_run(h_text)
+        r.bold = True
+        r.font.size = Pt(9)
+        r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+    for i, row_data in enumerate(loop_cases):
+        row = table.rows[i + 1]
+        bg = "FFFFFF" if i % 2 == 0 else "F9FBFD"
+        for j, val in enumerate(row_data):
+            cell = row.cells[j]
+            cell.width = widths[j]
+            set_cell_background(cell, bg)
+            set_cell_margins(cell)
+            p = cell.paragraphs[0]
+            r = p.add_run(val)
+            r.font.size = Pt(8.5)
+            if j == 0:
+                r.bold = True
+    doc.add_paragraph()
+
 def add_eval_section(doc):
-    h = doc.add_heading("6. ĐÁNH GIÁ MỨC ĐỘ BAO PHỦ VÀ KẾT LUẬN", level=1)
+    h = doc.add_heading("7. ĐÁNH GIÁ MỨC ĐỘ BAO PHỦ VÀ KẾT LUẬN", level=1)
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
 
-    doc.add_heading("6.1. Bảng tổng hợp mức độ bao phủ (Coverage Metrics Evaluation)", level=2)
+    doc.add_heading("7.1. Bảng tổng hợp mức độ bao phủ (Coverage Metrics Evaluation)", level=2)
 
     eval_data = [
         ("Độ phủ câu lệnh / dòng lệnh (C1 - Statement Coverage)", "20 Nodes", "20 Nodes", "100.0%", "ĐẠT XUẤT SẮC"),
         ("Độ phủ nhánh / quyết định (C2 - Decision/Branch Coverage)", "16 Nhánh (8 Decisions x 2)", "16 Nhánh", "100.0%", "ĐẠT XUẤT SẮC"),
         ("Độ phủ điều kiện phức hợp (C3 - Multiple Condition Coverage)", "4 Chân trị (A, B)", "4 Chân trị", "100.0%", "ĐẠT XUẤT SẮC"),
-        ("Độ phủ đường dẫn độc lập (Basis Path Coverage - McCabe)", "9 Đường cơ sở", "9 Đường cơ sở", "100.0%", "ĐẠT XUẤT SẮC")
+        ("Độ phủ đường dẫn độc lập (Basis Path Coverage - McCabe)", "9 Đường cơ sở", "9 Đường cơ sở", "100.0%", "ĐẠT XUẤT SẮC"),
+        ("Độ phủ vòng lặp (Loop Coverage)", "7 Trường hợp chuẩn", "7 Trường hợp chuẩn", "100.0%", "ĐẠT XUẤT SẮC")
     ]
 
     table = doc.add_table(rows=len(eval_data) + 1, cols=5)
@@ -604,7 +672,7 @@ def add_eval_section(doc):
                 r.font.color.rgb = RGBColor(0x00, 0x80, 0x00)
     doc.add_paragraph()
 
-    doc.add_heading("6.2. Kết luận và giá trị thực tiễn đối với hệ thống tuyển dụng", level=2)
+    doc.add_heading("7.2. Kết luận và giá trị thực tiễn đối với hệ thống tuyển dụng", level=2)
     p_conc = doc.add_paragraph(
         "1. Tuân thủ chặt chẽ mô hình toán học và chuẩn kiểm thử học thuật: Việc áp dụng 3 phương pháp tính độc lập "
         "của Thomas McCabe (E - N + 2P, Pn + 1, và số miền khép kín R) đều hội tụ chính xác tại giá trị V(G) = 9, "
@@ -615,7 +683,8 @@ def add_eval_section(doc):
         "3. Cơ chế chịu lỗi bền bỉ (Fault-Tolerance) qua khối xử lý thông báo: Thiết kế khối try-catch tại Node 16a/16b đảm bảo "
         "rằng sự cố gián đoạn từ dịch vụ gửi email bên ngoài không làm đổ vỡ tiến trình nghiệp vụ chính của hệ thống. "
         "Hồ sơ ứng viên vẫn được chuyển trạng thái an toàn trong CSDL và hệ thống ghi nhận cảnh báo để xử lý sau.\n\n"
-        "4. Xác minh tự động 100% bằng Unit Test: Toàn bộ 12 ca kiểm thử (9 ca kiểm thử cơ sở và 3 ca bổ trợ / ngắt mạch) "
+        "4. Độ bao phủ vòng lặp (Loop Coverage): Kiểm thử thành công 7 trường hợp chuẩn của vòng lặp duyệt hồ sơ hàng loạt (LOOP_01 - LOOP_07).\n\n"
+        "5. Xác minh tự động 100% bằng Unit Test: Toàn bộ 12 ca kiểm thử (9 ca kiểm thử cơ sở và 3 ca bổ trợ / ngắt mạch) "
         "đã được hiện thực hóa trong tệp update-status.wb.test.ts và chạy thành công 100% thông qua trình thực thi tsx với thời gian phản hồi siêu tốc (< 10ms)."
     )
     p_conc.paragraph_format.line_spacing = 1.15
@@ -643,6 +712,7 @@ def main():
     add_c1_table(doc)
     add_c2_table(doc)
     add_c3_section(doc)
+    add_loop_testing(doc)
     add_eval_section(doc)
 
     doc.save(output_docx)

@@ -384,7 +384,37 @@ $$\Rightarrow V(G) = R = 9$$
 
 ---
 
-## 6. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN
+## 6. SINH CA KIỂM THỬ ĐỂ KIỂM THỬ CÁC VÒNG LẶP TRONG HÀM (LOOP TESTING)
+
+Theo lý thuyết kiểm thử dòng điều khiển và giáo trình Kiểm thử phần mềm (CSE462 - ĐH Thủy Lợi), với cấu trúc vòng lặp đơn (Simple Loop) hoặc xử lý mảng phần tử, cần thiết kế tập ca kiểm thử bao phủ đầy đủ **7 trường hợp chuẩn**:
+1. Vòng lặp thực hiện 0 lần ($m = 0$)
+2. Vòng lặp thực hiện 1 lần ($m = 1$)
+3. Vòng lặp thực hiện 2 lần ($m = 2$)
+4. Vòng lặp thực hiện $k$ lần điển hình ($2 < k < n - 1$)
+5. Vòng lặp thực hiện $n - 1$ lần ($m = n - 1$)
+6. Vòng lặp thực hiện $n$ lần (Tối đa cấu hình cho phép, $m = n$)
+7. Vòng lặp thực hiện $n + 1$ lần (Vượt giới hạn tối đa, $m = n + 1$)
+
+### Áp dụng vào Use Case 10 (ScheduleInterviewUseCase):
+Trong phương thức `execute`, cấu trúc lặp và duyệt mảng xuất hiện ở hai vị trí trọng yếu:
+1. **Mảng câu hỏi phỏng vấn đề xuất AI (`suggestedQuestions` trong `aiAnalysis` / `emailPayload`):** Kết quả phân tích hồ sơ từ Gemini AI trả về danh sách các câu hỏi gợi ý cho buổi phỏng vấn. Hệ thống quy định cấu hình tối đa **$n = 10$** câu hỏi phỏng vấn để đảm bảo thư mời ngắn gọn và cuộc phỏng vấn diễn ra trong thời lượng chuẩn (30–60 phút).
+2. **Mảng dòng nội dung mô tả lịch phỏng vấn:** `description: [ ... ].filter(Boolean).join('\n')` và mảng tệp đính kèm thư mời (`attachments: [invite]`).
+
+#### Bảng ca kiểm thử vòng lặp duyệt danh sách câu hỏi phỏng vấn đề xuất (`suggestedQuestions`, $n = 10$):
+
+| TT | Trường hợp kiểm thử vòng lặp | Số câu hỏi ($m$) | Dữ liệu đầu vào kiểm thử cụ thể | Kết quả mong đợi |
+| :---: | :--- | :---: | :--- | :--- |
+| **LOOP_01** | Vòng lặp 0 lần (Không có câu hỏi) | $m = 0$ | AI trả về `suggestedQuestions = []` | Vòng lặp thực hiện 0 lần, email sử dụng mẫu phỏng vấn mặc định an toàn, không phát sinh lỗi |
+| **LOOP_02** | Vòng lặp 1 lần (1 câu hỏi) | $m = 1$ | `suggestedQuestions = ["Hỏi về kiến trúc Clean Architecture"]` | Vòng lặp chạy 1 lần, chèn đúng 1 câu hỏi vào nội dung thư mời và file `.ics` |
+| **LOOP_03** | Vòng lặp 2 lần (2 câu hỏi) | $m = 2$ | `suggestedQuestions = ["Hỏi Clean Architecture", "Kinh nghiệm NestJS"]` | Vòng lặp chạy 2 lần, chèn 2 câu hỏi vào email, gửi thư mời thành công |
+| **LOOP_04** | Vòng lặp $k$ lần ($2 < k < n - 1$) | $m = 5$ | Mảng gồm 5 câu hỏi phỏng vấn tiêu chuẩn | Vòng lặp xử lý 5 câu hỏi ổn định, định dạng danh sách câu hỏi đẹp mắt |
+| **LOOP_05** | Vòng lặp $n - 1$ lần | $m = 9$ | Mảng gồm 9 câu hỏi phỏng vấn chuyên sâu | Vòng lặp xử lý 9 câu hỏi ổn định cận trên tối đa |
+| **LOOP_06** | Vòng lặp $n$ lần (Tối đa cấu hình) | $m = 10$ | Mảng gồm đúng 10 câu hỏi phỏng vấn | Vòng lặp thực thi đủ 10 lần, đóng gói trọn vẹn 10 câu hỏi vào thư mời |
+| **LOOP_07** | Vòng lặp $n + 1$ lần (Vượt giới hạn) | $m = 11$ | AI trả về 11 câu hỏi phỏng vấn | Hệ thống tự động cắt tỉa (slice) lấy 10 câu hỏi đầu tiên, tránh làm email quá tải |
+
+---
+
+## 7. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN
 
 1. **Độ bao phủ câu lệnh ($C_1$ - Statement Coverage):**
    - Đạt **100%** bao phủ tất cả 20/20 khối lệnh cơ bản (từ Start, Node 1 đến Node 18, bao gồm cả đỉnh ngoại lệ Try 16a và Catch 16b).
@@ -392,5 +422,7 @@ $$\Rightarrow V(G) = R = 9$$
    - Đạt **100%** bao phủ tất cả 8 điểm quyết định rẽ nhánh logic và khối ngoại lệ AI đều được duyệt qua cả hai hướng Đúng (True) và Sai (False).
 3. **Độ bao phủ điều kiện ($C_3$ - Condition Coverage):**
    - Đạt **100%** cho biểu thức phức hợp tại Node 1 (`!input.candidateID || !input.jobID`) theo đúng nguyên lý ngắt mạch (Short-circuit).
-4. **Tính bền vững và khả năng chịu lỗi (Fault-tolerance):**
+4. **Độ bao phủ vòng lặp (Loop Coverage):**
+   - Đạt **100%** với đầy đủ 7 trường hợp kiểm thử vòng lặp chuẩn ($m = 0, 1, 2, k, n-1, n, n+1$) trên biến mảng `suggestedQuestions`.
+5. **Tính bền vững và khả năng chịu lỗi (Fault-tolerance):**
    - Bộ ca kiểm thử hộp trắng bao phủ toàn diện cả các trường hợp lỗi dữ liệu đầu vào rỗng, lỗi ứng viên không tồn tại, lỗi thiếu email, lỗi trùng lịch phỏng vấn (Conflict Detection), lỗi kết nối cơ sở dữ liệu và khả năng dự phòng khi dịch vụ trí tuệ nhân tạo Gemini gặp sự cố.

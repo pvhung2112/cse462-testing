@@ -440,7 +440,39 @@ $$\Rightarrow V(G) = R = 10$$
 
 ---
 
-## 6. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN
+## 6. SINH CA KIỂM THỬ ĐỂ KIỂM THỬ CÁC VÒNG LẶP TRONG HÀM (LOOP TESTING)
+
+Theo lý thuyết kiểm thử dòng điều khiển và giáo trình Kiểm thử phần mềm (CSE462 - ĐH Thủy Lợi), với cấu trúc vòng lặp đơn (Simple Loop), cần thiết kế tập ca kiểm thử bao phủ đầy đủ **7 trường hợp chuẩn**:
+1. Vòng lặp thực hiện 0 lần ($m = 0$)
+2. Vòng lặp thực hiện 1 lần ($m = 1$)
+3. Vòng lặp thực hiện 2 lần ($m = 2$)
+4. Vòng lặp thực hiện $k$ lần điển hình ($2 < k < n - 1$)
+5. Vòng lặp thực hiện $n - 1$ lần ($m = n - 1$)
+6. Vòng lặp thực hiện $n$ lần (Tối đa cấu hình cho phép, $m = n$)
+7. Vòng lặp thực hiện $n + 1$ lần (Vượt giới hạn tối đa, $m = n + 1$)
+
+### Áp dụng vào Use Case 09 (SendBulkEmailUseCase):
+Trong hàm `execute`, vòng lặp xuất hiện tại **Node 8** (Dòng 56):
+```typescript
+for (let i = 0; i < candidates.length; i++) { ... }
+```
+Vòng lặp này duyệt tuần tự qua từng phần tử trong danh sách ứng viên `candidateIds` / `candidates` để truy vấn công việc, cá nhân hóa nội dung email và gọi dịch vụ `mailSvc.sendEmail`. Theo đặc tả kỹ thuật của hệ thống tuyển dụng (`TC_UC09_TuDongHoaGuiEmail.md`), số lượng ứng viên tối đa cho phép gửi email hàng loạt trong một phiên làm việc là **$n = 50$** ứng viên (nhằm chống nghẽn hàng đợi SMTP và chống vi phạm chính sách gửi thư).
+
+#### Bảng ca kiểm thử vòng lặp duyệt danh sách gửi email hàng loạt (`candidates`, $n = 50$):
+
+| TT | Trường hợp kiểm thử vòng lặp | Số phần tử ($m$) | Dữ liệu đầu vào kiểm thử cụ thể | Kết quả mong đợi |
+| :---: | :--- | :---: | :--- | :--- |
+| **LOOP_01** | Vòng lặp 0 lần (Danh sách rỗng) | $m = 0$ | Gửi `candidateIds = []` rỗng | Hệ thống ném lỗi `"Danh sách ứng viên không được để trống."` (Chặn tại Node 1 trước khi vào vòng lặp) |
+| **LOOP_02** | Vòng lặp 1 lần (Đơn lẻ 1 ứng viên) | $m = 1$ | `candidateIds = ["CAN_01"]` | Vòng lặp thực thi 1 lần, gửi 1 email thành công, `totalSent = 1` |
+| **LOOP_03** | Vòng lặp 2 lần (2 ứng viên) | $m = 2$ | `candidateIds = ["CAN_01", "CAN_02"]` | Vòng lặp thực thi 2 lần, gửi 2 email thành công, `totalSent = 2` |
+| **LOOP_04** | Vòng lặp $k$ lần ($2 < k < n - 1$) | $m = 25$ | Mảng gồm 25 mã ứng viên hợp lệ | Vòng lặp thực thi 25 lần ổn định, gửi email hàng loạt thành công, `totalSent = 25` |
+| **LOOP_05** | Vòng lặp $n - 1$ lần | $m = 49$ | Mảng gồm 49 mã ứng viên hợp lệ | Vòng lặp xử lý 49 lần ổn định cận trên tối đa, `totalSent = 49` |
+| **LOOP_06** | Vòng lặp $n$ lần (Tối đa cấu hình) | $m = 50$ | Mảng đúng 50 mã ứng viên (ngưỡng max) | Vòng lặp thực thi đủ 50 lần, gửi trọn vẹn 50 email thành công, `totalSent = 50` |
+| **LOOP_07** | Vòng lặp $n + 1$ lần (Vượt giới hạn) | $m = 51$ | Gửi danh sách 51 ứng viên | Hệ thống từ chối hoặc cảnh báo: `"Số lượng ứng viên gửi hàng loạt không được vượt quá 50 người"` |
+
+---
+
+## 7. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN
 
 1. **Độ bao phủ câu lệnh ($C_1$ - Statement Coverage):**
    - Đạt **100%** bao phủ tất cả 22/22 khối lệnh (từ Start, Node 1 đến Node 20, bao gồm cả đỉnh ngoại lệ Try 14a, Catch 14b và Catch ngoài Node 19).
@@ -448,5 +480,7 @@ $$\Rightarrow V(G) = R = 10$$
    - Đạt **100%** bao phủ tất cả 9 điểm quyết định rẽ nhánh logic và ngoại lệ đều được duyệt qua cả hai hướng Đúng (True) và Sai (False).
 3. **Độ bao phủ điều kiện ($C_3$ - Condition Coverage):**
    - Đạt **100%** cho biểu thức phức hợp tại Node 1 (`!input.candidateIds || input.candidateIds.length === 0`) theo đúng nguyên lý ngắt mạch (Short-circuit).
-4. **Tính bền vững và khả năng bảo trì:**
+4. **Độ bao phủ vòng lặp (Loop Coverage):**
+   - Đạt **100%** với đầy đủ 7 trường hợp kiểm thử vòng lặp chuẩn ($m = 0, 1, 2, k, n-1, n, n+1$) trên biến mảng `candidates`.
+5. **Tính bền vững và khả năng bảo trì:**
    - Bộ ca kiểm thử hộp trắng bao phủ toàn diện cả các trường hợp biên rỗng, xử lý ngoại lệ mạng cơ sở dữ liệu, kiểm tra tính toàn vẹn dữ liệu ứng viên và bảo đảm tính chịu lỗi (Fault-tolerance) của hệ thống tuyển dụng.

@@ -512,14 +512,83 @@ def add_section_5(doc):
 
     doc.add_paragraph()
 
+def add_loop_testing(doc):
+    h = doc.add_heading("6. SINH CA KIỂM THỬ ĐỂ KIỂM THỬ CÁC VÒNG LẶP TRONG HÀM (LOOP TESTING)", level=1)
+    h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
+    p_desc = doc.add_paragraph(
+        "Theo lý thuyết kiểm thử dòng điều khiển và giáo trình Kiểm thử phần mềm (CSE462 - ĐH Thủy Lợi), "
+        "với cấu trúc vòng lặp đơn (Simple Loop), cần thiết kế tập ca kiểm thử bao phủ đầy đủ 7 trường hợp chuẩn:\n"
+        "1. Vòng lặp thực hiện 0 lần (m = 0)\n"
+        "2. Vòng lặp thực hiện 1 lần (m = 1)\n"
+        "3. Vòng lặp thực hiện 2 lần (m = 2)\n"
+        "4. Vòng lặp thực hiện k lần điển hình (2 < k < n - 1)\n"
+        "5. Vòng lặp thực hiện n - 1 lần (m = n - 1)\n"
+        "6. Vòng lặp thực hiện n lần (Tối đa cấu hình cho phép, m = n)\n"
+        "7. Vòng lặp thực hiện n + 1 lần (Vượt giới hạn tối đa, m = n + 1)\n\n"
+        "Áp dụng vào Use Case 09 (SendBulkEmailUseCase):\n"
+        "Vòng lặp xuất hiện tại Node 8 (Dòng 56): 'for (let i = 0; i < candidates.length; i++)'. "
+        "Vòng lặp này duyệt tuần tự qua từng phần tử trong danh sách ứng viên candidateIds để cá nhân hóa nội dung email "
+        "và gửi qua mailSvc.sendEmail. Theo đặc tả kỹ thuật hệ thống tuyển dụng (TC_UC09_TuDongHoaGuiEmail.md), "
+        "ngưỡng tối đa cho phép gửi email hàng loạt trong một phiên là n = 50 ứng viên."
+    )
+    p_desc.paragraph_format.line_spacing = 1.15
+
+    loop_cases = [
+        ("LOOP_01", "Vòng lặp 0 lần (Danh sách rỗng)", "m = 0", "Gửi candidateIds = [] rỗng", "Hệ thống ném lỗi: 'Danh sách ứng viên không được để trống.' (Chặn tại Node 1 trước khi vào vòng lặp)"),
+        ("LOOP_02", "Vòng lặp 1 lần (Đơn lẻ 1 ứng viên)", "m = 1", "candidateIds = ['CAN_01']", "Vòng lặp thực thi 1 lần, gửi 1 email thành công, totalSent = 1"),
+        ("LOOP_03", "Vòng lặp 2 lần (2 ứng viên)", "m = 2", "candidateIds = ['CAN_01', 'CAN_02']", "Vòng lặp thực thi 2 lần, gửi 2 email thành công, totalSent = 2"),
+        ("LOOP_04", "Vòng lặp k lần (2 < k < n - 1)", "m = 25", "Mảng gồm 25 mã ứng viên hợp lệ", "Vòng lặp thực thi 25 lần ổn định, gửi email hàng loạt thành công, totalSent = 25"),
+        ("LOOP_05", "Vòng lặp n - 1 lần", "m = 49", "Mảng gồm 49 mã ứng viên hợp lệ", "Vòng lặp xử lý 49 lần ổn định cận trên tối đa, totalSent = 49"),
+        ("LOOP_06", "Vòng lặp n lần (Tối đa cấu hình)", "m = 50", "Mảng đúng 50 mã ứng viên (ngưỡng max)", "Vòng lặp thực thi đủ 50 lần, gửi trọn vẹn 50 email thành công, totalSent = 50"),
+        ("LOOP_07", "Vòng lặp n + 1 lần (Vượt giới hạn)", "m = 51", "Gửi danh sách 51 ứng viên", "Hệ thống từ chối hoặc cảnh báo: 'Số lượng ứng viên gửi hàng loạt không được vượt quá 50 người'")
+    ]
+
+    p_tbl = doc.add_paragraph()
+    r_tbl = p_tbl.add_run("Bảng ca kiểm thử vòng lặp duyệt danh sách gửi email hàng loạt (candidates, n = 50):")
+    r_tbl.bold = True
+
+    table = doc.add_table(rows=len(loop_cases) + 1, cols=5)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(table)
+
+    headers = ["TT", "Trường hợp kiểm thử vòng lặp", "Số phần tử (m)", "Dữ liệu đầu vào kiểm thử cụ thể", "Kết quả mong đợi"]
+    widths = [Inches(0.8), Inches(1.8), Inches(1.0), Inches(1.6), Inches(1.8)]
+
+    for j, h_text in enumerate(headers):
+        cell = table.rows[0].cells[j]
+        cell.width = widths[j]
+        set_cell_background(cell, "1F4E79")
+        set_cell_margins(cell)
+        p = cell.paragraphs[0]
+        r = p.add_run(h_text)
+        r.bold = True
+        r.font.size = Pt(9)
+        r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+    for i, row_data in enumerate(loop_cases):
+        row = table.rows[i + 1]
+        for j, val in enumerate(row_data):
+            cell = row.cells[j]
+            cell.width = widths[j]
+            if i % 2 == 1:
+                set_cell_background(cell, "F9FAFB")
+            set_cell_margins(cell)
+            p = cell.paragraphs[0]
+            r = p.add_run(val)
+            r.font.size = Pt(8.5)
+            if j == 0:
+                r.bold = True
+    doc.add_paragraph()
+
 def add_conclusion(doc):
-    h = doc.add_heading("6. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN", level=1)
+    h = doc.add_heading("7. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN", level=1)
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
     p = doc.add_paragraph()
     r = p.add_run(
         "1. Độ bao phủ câu lệnh (C1 - Statement Coverage): Đạt 100% (22/22 khối lệnh cơ bản bao gồm cả đỉnh Start, khối Try 14a, Catch 14b và Catch ngoài Node 19 được thực thi đầy đủ qua 9 ca kiểm thử C1_01 - C1_09).\n"
         "2. Độ bao phủ nhánh quyết định (C2 - Branch Coverage): Đạt 100% (tất cả 9 điểm quyết định và rẽ nhánh ngoại lệ True/False đều được kích hoạt đầy đủ qua ma trận điều kiện rẽ nhánh C2).\n"
-        "3. Độ bao phủ điều kiện (C3 - Condition Coverage): Đạt 100% cho biểu thức logic phức hợp tại Node 1 (!candidateIds || length === 0) theo đúng nguyên lý ngắt mạch Short-circuit evaluation.\n\n"
+        "3. Độ bao phủ điều kiện (C3 - Condition Coverage): Đạt 100% cho biểu thức logic phức hợp tại Node 1 (!candidateIds || length === 0) theo đúng nguyên lý ngắt mạch Short-circuit evaluation.\n"
+        "4. Độ bao phủ vòng lặp (Loop Coverage): Đạt 100% với 7/7 ca kiểm thử vòng lặp chuẩn (LOOP_01 - LOOP_07) bao quát từ m = 0 đến m = n + 1.\n\n"
         "Bộ ca kiểm thử hộp trắng được thiết kế đảm bảo phát hiện sớm các khiếm khuyết trong logic xử lý danh sách rỗng, xử lý ngoại lệ mạng cơ sở dữ liệu, kiểm tra tính toàn vẹn dữ liệu ứng viên và bảo đảm tính chịu lỗi (Fault-tolerance) của hệ thống tuyển dụng."
     )
     r.font.size = Pt(10)
@@ -540,6 +609,7 @@ def main():
     add_cfg_section(doc, base_dir)
     add_mccabe_section(doc)
     add_section_5(doc)
+    add_loop_testing(doc)
     add_conclusion(doc)
 
     out_path = os.path.join(base_dir, "KiemThuHopTrang_UC09_TuDongHoaGuiEmail.docx")

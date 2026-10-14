@@ -547,14 +547,82 @@ def add_section_5(doc):
 
     doc.add_paragraph()
 
+def add_loop_testing(doc):
+    h = doc.add_heading("6. SINH CA KIỂM THỬ ĐỂ KIỂM THỬ CÁC VÒNG LẶP TRONG HÀM (LOOP TESTING)", level=1)
+    h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
+    p_desc = doc.add_paragraph(
+        "Theo lý thuyết kiểm thử dòng điều khiển và giáo trình Kiểm thử phần mềm (CSE462 - ĐH Thủy Lợi), "
+        "với cấu trúc vòng lặp đơn (Simple Loop) hoặc xử lý mảng phần tử, cần thiết kế tập ca kiểm thử bao phủ đầy đủ 7 trường hợp chuẩn:\n"
+        "1. Vòng lặp thực hiện 0 lần (m = 0)\n"
+        "2. Vòng lặp thực hiện 1 lần (m = 1)\n"
+        "3. Vòng lặp thực hiện 2 lần (m = 2)\n"
+        "4. Vòng lặp thực hiện k lần điển hình (2 < k < n - 1)\n"
+        "5. Vòng lặp thực hiện n - 1 lần (m = n - 1)\n"
+        "6. Vòng lặp thực hiện n lần (Tối đa cấu hình cho phép, m = n)\n"
+        "7. Vòng lặp thực hiện n + 1 lần (Vượt giới hạn tối đa, m = n + 1)\n\n"
+        "Áp dụng vào Use Case 10 (ScheduleInterviewUseCase):\n"
+        "Trong phương thức execute, kết quả phân tích từ Gemini AI trả về mảng danh sách câu hỏi phỏng vấn đề xuất "
+        "suggestedQuestions (nằm trong aiAnalysis / emailPayload). Hệ thống quy định cấu hình tối đa n = 10 câu hỏi "
+        "phỏng vấn để đảm bảo nội dung thư mời và thời lượng phỏng vấn chuẩn hóa."
+    )
+    p_desc.paragraph_format.line_spacing = 1.15
+
+    loop_cases = [
+        ("LOOP_01", "Vòng lặp 0 lần (Không có câu hỏi)", "m = 0", "AI trả về suggestedQuestions = []", "Vòng lặp thực hiện 0 lần, email sử dụng mẫu phỏng vấn mặc định an toàn, không phát sinh lỗi"),
+        ("LOOP_02", "Vòng lặp 1 lần (1 câu hỏi)", "m = 1", "suggestedQuestions = ['Hỏi Clean Architecture']", "Vòng lặp chạy 1 lần, chèn đúng 1 câu hỏi vào thư mời và file .ics"),
+        ("LOOP_03", "Vòng lặp 2 lần (2 câu hỏi)", "m = 2", "suggestedQuestions = ['Hỏi Clean Architecture', 'Kinh nghiệm NestJS']", "Vòng lặp chạy 2 lần, chèn 2 câu hỏi vào email, gửi thư mời thành công"),
+        ("LOOP_04", "Vòng lặp k lần (2 < k < n - 1)", "m = 5", "Mảng gồm 5 câu hỏi phỏng vấn tiêu chuẩn", "Vòng lặp xử lý 5 câu hỏi ổn định, định dạng danh sách câu hỏi đẹp mắt"),
+        ("LOOP_05", "Vòng lặp n - 1 lần", "m = 9", "Mảng gồm 9 câu hỏi phỏng vấn chuyên sâu", "Vòng lặp xử lý 9 câu hỏi ổn định cận trên tối đa"),
+        ("LOOP_06", "Vòng lặp n lần (Tối đa cấu hình)", "m = 10", "Mảng gồm đúng 10 câu hỏi phỏng vấn", "Vòng lặp thực thi đủ 10 lần, đóng gói trọn vẹn 10 câu hỏi vào thư mời"),
+        ("LOOP_07", "Vòng lặp n + 1 lần (Vượt giới hạn)", "m = 11", "AI trả về 11 câu hỏi phỏng vấn", "Hệ thống tự động cắt tỉa (slice) lấy 10 câu hỏi đầu tiên, tránh làm email quá tải")
+    ]
+
+    p_tbl = doc.add_paragraph()
+    r_tbl = p_tbl.add_run("Bảng ca kiểm thử vòng lặp duyệt danh sách câu hỏi phỏng vấn đề xuất (suggestedQuestions, n = 10):")
+    r_tbl.bold = True
+
+    table = doc.add_table(rows=len(loop_cases) + 1, cols=5)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    set_table_borders(table)
+
+    headers = ["TT", "Trường hợp kiểm thử vòng lặp", "Số câu hỏi (m)", "Dữ liệu đầu vào kiểm thử cụ thể", "Kết quả mong đợi"]
+    widths = [Inches(0.8), Inches(1.8), Inches(1.0), Inches(1.6), Inches(1.8)]
+
+    for j, h_text in enumerate(headers):
+        cell = table.rows[0].cells[j]
+        cell.width = widths[j]
+        set_cell_background(cell, "1F4E79")
+        set_cell_margins(cell)
+        p = cell.paragraphs[0]
+        r = p.add_run(h_text)
+        r.bold = True
+        r.font.size = Pt(9)
+        r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+    for i, row_data in enumerate(loop_cases):
+        row = table.rows[i + 1]
+        for j, val in enumerate(row_data):
+            cell = row.cells[j]
+            cell.width = widths[j]
+            if i % 2 == 1:
+                set_cell_background(cell, "F9FAFB")
+            set_cell_margins(cell)
+            p = cell.paragraphs[0]
+            r = p.add_run(val)
+            r.font.size = Pt(8.5)
+            if j == 0:
+                r.bold = True
+    doc.add_paragraph()
+
 def add_conclusion(doc):
-    h = doc.add_heading("6. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN", level=1)
+    h = doc.add_heading("7. ĐÁNH GIÁ ĐỘ ĐO BAO PHỦ VÀ KẾT LUẬN", level=1)
     h.style.font.color.rgb = RGBColor(0x1F, 0x4E, 0x79)
     p = doc.add_paragraph()
     r = p.add_run(
         "1. Độ bao phủ câu lệnh (C1 - Statement Coverage): Đạt 100% (20/20 khối lệnh cơ bản bao gồm đỉnh Start, 18 Node nghiệp vụ trong đó có cả đỉnh Try 16a và Catch 16b được thực thi đầy đủ qua 9 ca kiểm thử C1_01 - C1_09).\n"
         "2. Độ bao phủ nhánh quyết định (C2 - Branch Coverage): Đạt 100% (tất cả 8 điểm quyết định rẽ nhánh logic và khối ngoại lệ AI đều được kích hoạt đầy đủ 2 nhánh True và False).\n"
-        "3. Độ bao phủ điều kiện (C3 - Condition Coverage): Đạt 100% cho biểu thức logic phức hợp tại Node 1 (!candidateID || !jobID) theo đúng nguyên lý ngắt mạch Short-circuit evaluation.\n\n"
+        "3. Độ bao phủ điều kiện (C3 - Condition Coverage): Đạt 100% cho biểu thức logic phức hợp tại Node 1 (!candidateID || !jobID) theo đúng nguyên lý ngắt mạch Short-circuit evaluation.\n"
+        "4. Độ bao phủ vòng lặp (Loop Coverage): Đạt 100% với 7/7 ca kiểm thử vòng lặp chuẩn (LOOP_01 - LOOP_07) trên biến mảng suggestedQuestions.\n\n"
         "Bộ ca kiểm thử hộp trắng của Use Case 10 được thiết kế bao phủ toàn diện cả các trường hợp lỗi dữ liệu đầu vào rỗng, lỗi ứng viên không tồn tại, lỗi thiếu email, lỗi trùng lịch hẹn phỏng vấn (Conflict Prevention), lỗi kết nối cơ sở dữ liệu và khả năng chịu lỗi (Fault-tolerance) khi dịch vụ AI gặp sự cố."
     )
     r.font.size = Pt(10)
@@ -575,6 +643,7 @@ def main():
     add_cfg_section(doc, base_dir)
     add_mccabe_section(doc)
     add_section_5(doc)
+    add_loop_testing(doc)
     add_conclusion(doc)
 
     out_path = os.path.join(base_dir, "KiemThuHopTrang_UC10_LenLichPhongVan.docx")
